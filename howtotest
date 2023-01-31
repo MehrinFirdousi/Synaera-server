@@ -1,0 +1,10 @@
+To send a HTTP POST request with array as data from cmdline 
+
+# in powershell:
+Invoke-WebRequest -Method POST -Uri "http://localhost:80/predict" -ContentType "application/json" -Body "[5.9,3.0,5.1,1.8]"
+
+# in unix:
+curl -X POST 0.0.0.0:80/predict -H 'Content-Type: application/json' -d '[5.9,3.0,5.1,1.8]'
+
+# in android:
+Use okhttp framework
