@@ -1,5 +1,7 @@
 import pickle
 import numpy as np
+import werkzeug
+import flask
 from flask import Flask, request
 
 model = None
@@ -14,18 +16,20 @@ def load_model():
 def home_endpoint():
     return 'Hello World!'
 
-# @app.route('/predict', methods=['GET'])
-# def temp_endpoint():
-# 	return 'test'
+@app.route('/sendimg', methods=['POST'])
+def get_image():
+    imagefile = flask.request.files['image']
+    filename = werkzeug.utils.secure_filename(imagefile.filename)
+    print("\nReceived image File name : " + imagefile.filename)
+    imagefile.save("frames/" + filename)
+    return "Image Uploaded Successfully"
 
 @app.route('/predict', methods=['POST'])
 def get_prediction():
     # Works only for a single sample
     if request.method == 'POST':
         data = request.get_json()  # Get data posted as a json
-        # print(data)
         data = np.array(data)[np.newaxis, :]  # converts shape from (4,) to (1, 4)
-        # print(data)
         prediction = model.predict(data)  # runs globally loaded model on the data
     return str(prediction[0])
 
@@ -35,4 +39,4 @@ def get_prediction():
 
 if __name__ == '__main__':
     load_model()  # load model at the beginning once only
-    app.run(host='0.0.0.0', port=80)
+    app.run(host='0.0.0.0', port=80, debug=True)
