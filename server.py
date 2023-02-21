@@ -12,11 +12,6 @@ from flask import Flask, request
 model = None
 app = Flask(__name__)
 
-# def load_model():
-# 	global model
-# 	with open('iris_trained_model.pkl', 'rb') as f:
-# 		model = pickle.load(f);
-
 def load_model():
     global model
     global frame_paths
@@ -24,14 +19,14 @@ def load_model():
     global mp_drawing
     global actions
     global colors
-    global pred
+    global sequence
 
     frame_paths = []
+    sequence = []
     mp_holistic = mp.solutions.holistic # Holistic model - make our detection
     mp_drawing = mp.solutions.drawing_utils # Drawing utilities - make our drawings
     colors = [(245,117,16), (117,245,16), (16,117,245),(16,117,245)]
     actions = np.array(['NoSign','hello', 'thanks', 'iloveyou'])
-    pred = ""
     model = keras.models.load_model(r'C:\Users\HP\Documents\Mehrin\CSIT321\nlp-model\Computer Vision Model\Notebooks\Saved Weights\test8.h5')
 
 @app.route('/')
@@ -70,37 +65,33 @@ def prob_viz(res, actions, input_frame, colors):
         
     return output_frame
 
-def run_model():
-    sequence = []
-    sentence = []
-    predictions = []
-    threshold = 0.5
-    result_p = "nothing"
-    with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
-        # for i in range(len(frame_paths)):
-        for i in range(25):
-            # Read feed
-            frame = cv2.imread(frame_paths[i])
-            frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
-            # cv2.imshow('Cat', frame)
-            # cv2.waitKey(0)
-            # Make detections
-            image, results = mediapipe_detection(frame, holistic)
-            #print(results)
+# def run_model():
+#     sequence = []
+#     # sentence = []
+#     # predictions = []
+#     # threshold = 0.5
+#     result_p = "nothing"
+#     with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
+#         # for i in range(len(frame_paths)):
+#         for i in range(25):
+#             # Read feed
+#             frame = cv2.imread(frame_paths[i])
+#             frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
+
+#             # Make detections
+#             image, results = mediapipe_detection(frame, holistic)     
+#             draw_landmarks(image, results)
             
-            # Draw landmarks
-            draw_landmarks(image, results)
+#             # 2. Prediction logic
+#             keypoints = extract_keypoints(results)
+#             sequence.append(keypoints)
+#             sequence = sequence[-25:]
             
-            # 2. Prediction logic
-            keypoints = extract_keypoints(results)
-            sequence.append(keypoints)
-            sequence = sequence[-25:]
-            
-            if len(sequence) == 25:
-                res = model.predict(np.expand_dims(sequence, axis=0))[0]
-                print(actions[np.argmax(res)])
-                result_p = actions[np.argmax(res)]
-                predictions.append(np.argmax(res))
+#             if len(sequence) == 25:
+#                 res = model.predict(np.expand_dims(sequence, axis=0))[0]
+#                 print(actions[np.argmax(res)])
+#                 result_p = actions[np.argmax(res)]
+                # predictions.append(np.argmax(res))
                 
                 
             #3. Viz logic
@@ -129,24 +120,53 @@ def run_model():
             # # Break gracefully
             # if cv2.waitKey(1) & 0xFF == ord('q'):
             #     break
-    return (result_p)
+    # return (result_p)
+
+def get_holistic_landmarks(frame_path):
+    with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
+        frame = cv2.imread(frame_path)
+        frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
+        image, results = mediapipe_detection(frame, holistic)     
+        draw_landmarks(image, results)
+        keypoints = extract_keypoints(results)
+        sequence.append(keypoints)
+        sequence = sequence[-25:]
+        if len(sequence) == 25:
+            res = model.predict(np.expand_dims(sequence, axis=0))[0]
+            print(actions[np.argmax(res)])
+            return (actions[np.argmax(res)])
+        return "nothing"
+
 
 @app.route('/sendImg', methods=['POST'])
 def get_image():
+    # save image locally
     imagefile = flask.request.files['image']
     filename = werkzeug.utils.secure_filename(imagefile.filename)
-    # frame_paths.append("frames/"+filename)
-    frame_paths.append(os.path.join("frames", filename))
-    # print("\nReceived image File name : ", frame_paths[-1])
+    # frame_paths.append(os.path.join("frames", filename))
     imagefile.save("frames/" + filename)
-    print("\nReceived", len(frame_paths), "frames")
-    pred="no"
-    if len(frame_paths) == 25:
-        pred = run_model()
-        frame_paths.clear()
-    # if len(frame_paths) > 25:
+    print("\nReceived", filename)
+
+    # res = get_holistic_landmarks(os.path.join("frames", filename))
+
+    # pred="no"
+    # if len(frame_paths) == 25:
+    #     pred = run_model()
     #     frame_paths.clear()
-    return (pred)
+
+    with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
+        frame = cv2.imread(os.path.join("frames", filename))
+        frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
+        image, results = mediapipe_detection(frame, holistic)     
+        draw_landmarks(image, results)
+        keypoints = extract_keypoints(results)
+        sequence.append(keypoints)
+        sequence = sequence[-25:]
+        if len(sequence) == 25:
+            res = model.predict(np.expand_dims(sequence, axis=0))[0]
+            print(actions[np.argmax(res)])
+            return (actions[np.argmax(res)])
+        return "nothing"
 
 @app.route('/predict', methods=['POST'])
 def get_prediction():
