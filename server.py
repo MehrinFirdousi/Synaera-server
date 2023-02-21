@@ -24,14 +24,12 @@ def load_model():
     global mp_drawing
     global actions
     global colors
-    global pred
 
     frame_paths = []
     mp_holistic = mp.solutions.holistic # Holistic model - make our detection
     mp_drawing = mp.solutions.drawing_utils # Drawing utilities - make our drawings
-    colors = [(245,117,16), (117,245,16), (16,117,245),(16,117,245)]
     actions = np.array(['NoSign','hello', 'thanks', 'iloveyou'])
-    pred = ""
+    colors = [(245,117,16), (117,245,16), (16,117,245),(16,117,245)]
     model = keras.models.load_model(r'C:\Users\HP\Documents\Mehrin\CSIT321\nlp-model\Computer Vision Model\Notebooks\Saved Weights\test8.h5')
 
 @app.route('/')
@@ -72,25 +70,23 @@ def prob_viz(res, actions, input_frame, colors):
 
 def run_model():
     sequence = []
-    sentence = []
     predictions = []
-    threshold = 0.5
     result_p = "nothing"
     with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
         # for i in range(len(frame_paths)):
+        new_list = frame_paths[-25:]
         for i in range(25):
             # Read feed
-            frame = cv2.imread(frame_paths[i])
+            frame = cv2.imread(new_list[i])
             frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
-            # cv2.imshow('Cat', frame)
-            # cv2.waitKey(0)
+
             # Make detections
             image, results = mediapipe_detection(frame, holistic)
             #print(results)
             
             # Draw landmarks
             draw_landmarks(image, results)
-            
+            # print("\nKeypoints done")
             # 2. Prediction logic
             keypoints = extract_keypoints(results)
             sequence.append(keypoints)
@@ -101,34 +97,6 @@ def run_model():
                 print(actions[np.argmax(res)])
                 result_p = actions[np.argmax(res)]
                 predictions.append(np.argmax(res))
-                
-                
-            #3. Viz logic
-            #     if np.unique(predictions[-10:])[0]==np.argmax(res): 
-            #         if res[np.argmax(res)] > threshold: 
-                        
-            #             if len(sentence) > 0: 
-            #                 if actions[np.argmax(res)] != sentence[-1]:
-            #                     sentence.append(actions[np.argmax(res)])
-            #             else:
-            #                 sentence.append(actions[np.argmax(res)])
-
-            #     if len(sentence) > 5: 
-            #         sentence = sentence[-5:]
-
-            #     # Viz probabilities
-            #     image = prob_viz(res, actions, image, colors)
-                
-            # cv2.rectangle(image, (0,0), (640, 40), (245, 117, 16), -1)
-            # cv2.putText(image, ' '.join(sentence), (3,30), 
-            #                 cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
-            
-            # # Show to screen
-            # cv2.imshow('OpenCV Feed', image)
-
-            # # Break gracefully
-            # if cv2.waitKey(1) & 0xFF == ord('q'):
-            #     break
     return (result_p)
 
 @app.route('/sendImg', methods=['POST'])
@@ -140,13 +108,12 @@ def get_image():
     # print("\nReceived image File name : ", frame_paths[-1])
     imagefile.save("frames/" + filename)
     print("\nReceived", len(frame_paths), "frames")
-    pred="no"
-    if len(frame_paths) == 25:
-        pred = run_model()
-        frame_paths.clear()
-    # if len(frame_paths) > 25:
-    #     frame_paths.clear()
-    return (pred)
+    if len(frame_paths) % 25 == 0:
+        return(run_model())
+    if len(frame_paths)>=500:
+        del frame_paths[:100]
+        # frame_paths.clear()
+    return ("nothing")
 
 @app.route('/predict', methods=['POST'])
 def get_prediction():
