@@ -1,0 +1,4 @@
+to send to nlp model: max of 72 chars but try and send every word 
+
+measure how long nosign is happening and if its for more than a second 
+then send the CV predictions to the NLP model 

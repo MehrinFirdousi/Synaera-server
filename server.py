@@ -19,10 +19,10 @@ def load_model():
     global mp_drawing
     global actions
     global colors
-    global sequence
+    global g_sequence
+    g_sequence = []
 
     frame_paths = []
-    sequence = []
     mp_holistic = mp.solutions.holistic # Holistic model - make our detection
     mp_drawing = mp.solutions.drawing_utils # Drawing utilities - make our drawings
     colors = [(245,117,16), (117,245,16), (16,117,245),(16,117,245)]
@@ -122,20 +122,20 @@ def prob_viz(res, actions, input_frame, colors):
             #     break
     # return (result_p)
 
-def get_holistic_landmarks(frame_path):
-    with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
-        frame = cv2.imread(frame_path)
-        frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
-        image, results = mediapipe_detection(frame, holistic)     
-        draw_landmarks(image, results)
-        keypoints = extract_keypoints(results)
-        sequence.append(keypoints)
-        sequence = sequence[-25:]
-        if len(sequence) == 25:
-            res = model.predict(np.expand_dims(sequence, axis=0))[0]
-            print(actions[np.argmax(res)])
-            return (actions[np.argmax(res)])
-        return "nothing"
+# def get_holistic_landmarks(frame_path):
+#     with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
+#         frame = cv2.imread(frame_path)
+#         frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
+#         image, results = mediapipe_detection(frame, holistic)     
+#         draw_landmarks(image, results)
+#         keypoints = extract_keypoints(results)
+#         sequence.append(keypoints)
+#         sequence = sequence[-25:]
+#         if len(sequence) == 25:
+#             res = model.predict(np.expand_dims(sequence, axis=0))[0]
+#             print(actions[np.argmax(res)])
+#             return (actions[np.argmax(res)])
+#         return "nothing"
 
 
 @app.route('/sendImg', methods=['POST'])
@@ -160,12 +160,15 @@ def get_image():
         image, results = mediapipe_detection(frame, holistic)     
         draw_landmarks(image, results)
         keypoints = extract_keypoints(results)
+        sequence = g_sequence
         sequence.append(keypoints)
         sequence = sequence[-25:]
         if len(sequence) == 25:
             res = model.predict(np.expand_dims(sequence, axis=0))[0]
             print(actions[np.argmax(res)])
+            # append to predictions, nlp takes max of 72 characters
             return (actions[np.argmax(res)])
+        g_sequence = sequence
         return "nothing"
 
 @app.route('/predict', methods=['POST'])
