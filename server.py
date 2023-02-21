@@ -19,8 +19,8 @@ def load_model():
     global mp_drawing
     global actions
     global colors
-    global g_sequence
-    g_sequence = []
+    global sequence
+    sequence = []
 
     frame_paths = []
     mp_holistic = mp.solutions.holistic # Holistic model - make our detection
@@ -143,7 +143,7 @@ def get_image():
     # save image locally
     imagefile = flask.request.files['image']
     filename = werkzeug.utils.secure_filename(imagefile.filename)
-    # frame_paths.append(os.path.join("frames", filename))
+    frame_paths.append(os.path.join("frames", filename))
     imagefile.save("frames/" + filename)
     print("\nReceived", filename)
 
@@ -160,16 +160,16 @@ def get_image():
         image, results = mediapipe_detection(frame, holistic)     
         draw_landmarks(image, results)
         keypoints = extract_keypoints(results)
-        sequence = g_sequence
         sequence.append(keypoints)
-        sequence = sequence[-25:]
+        while len(sequence) > 25:
+            sequence.pop(0)
+    # sequence = sequence[-25:]
         if len(sequence) == 25:
             res = model.predict(np.expand_dims(sequence, axis=0))[0]
             print(actions[np.argmax(res)])
             # append to predictions, nlp takes max of 72 characters
             return (actions[np.argmax(res)])
-        g_sequence = sequence
-        return "nothing"
+    return "nothing"
 
 @app.route('/predict', methods=['POST'])
 def get_prediction():
