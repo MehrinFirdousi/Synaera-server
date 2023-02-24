@@ -1,0 +1,5 @@
+# run: pip install -r requirements.txt
+# for now all installs are being run with: C:\Users\HP\AppData\Local\Programs\Python\Python311\python.exe -m pip install <package name>
+scikit-learn
+numpy
+Flask
