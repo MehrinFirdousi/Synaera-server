@@ -12,6 +12,6 @@ Unix:
 Android:
 Use okhttp framework
 
-# Hosting on Azure (Ubuntu 22.04 Server):
-Run the following to bind using gunicorn
-sudo /home/root/venv/bin/gunicorn -b 0.0.0.0:5000 wsgi:app
+# Hosting on Azure (Ubuntu 22.04 Server)
+Run the following to bind using gunicorn: 
+`sudo /home/root/venv/bin/gunicorn -b 0.0.0.0:5000 wsgi:app`
