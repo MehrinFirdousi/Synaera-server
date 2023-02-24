@@ -18,13 +18,13 @@ global mp_drawing
 global actions
 global colors
 
-frame_rate = 25
+frame_rate = 20
 sequence = []
 mp_holistic = mp.solutions.holistic # Holistic model - make our detection
 mp_drawing = mp.solutions.drawing_utils # Drawing utilities - make our drawings
 actions = np.array(['NoSign','hello', 'thanks', 'iloveyou'])
 colors = [(245,117,16), (117,245,16), (16,117,245),(16,117,245)]
-model = keras.models.load_model('test8.h5')
+model = keras.models.load_model(os.path.join('models', 'test9.h5'))
 
 @app.route('/')
 def home_endpoint():
@@ -63,7 +63,6 @@ def prob_viz(res, actions, input_frame, colors):
     return output_frame
 
 def run_model(frame, frame_no):
-    # sequence = []
     predictions = []
     result_p = "nothing"
     with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
@@ -79,10 +78,11 @@ def run_model(frame, frame_no):
         # Prediction logic
         keypoints = extract_keypoints(results)
         sequence.append(keypoints)
-        last_frames = sequence[-25:]
+        last_frames = sequence[-frame_rate:]
         
-        # if len(last_frames) == 25:
-        if ((int(frame_no) % 25 == 0) and (len(last_frames) == 25)):
+        # if len(last_frames) == frame_rate:
+        # if ((int(frame_no) % frame_rate == 0) and (len(last_frames) == frame_rate)):
+        if len(sequence) % 10 == 0 and int(frame_no) > frame_rate:
             res = model.predict(np.expand_dims(last_frames, axis=0))[0]
             print(actions[np.argmax(res)])
             result_p = actions[np.argmax(res)]
@@ -96,6 +96,7 @@ def get_image(frameCount):
     frame = cv2.imdecode(image_bytes, cv2.IMREAD_UNCHANGED)
     print("\nReceived", frameCount, "frames. len(seq)=", len(sequence))
     return(run_model(frame, frameCount))
+    return "nothing"
 
 @app.route('/predict', methods=['POST'])
 def get_prediction():
