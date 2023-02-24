@@ -1,5 +1,3 @@
-# import pickle
-# import pandas
 import numpy as np
 import werkzeug
 import flask
