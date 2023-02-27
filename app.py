@@ -18,13 +18,13 @@ global mp_drawing
 global actions
 global colors
 
-frame_rate = 20
+frame_rate = 25
 sequence = []
 mp_holistic = mp.solutions.holistic # Holistic model - make our detection
 mp_drawing = mp.solutions.drawing_utils # Drawing utilities - make our drawings
 actions = np.array(['NoSign','hello', 'thanks', 'iloveyou'])
 colors = [(245,117,16), (117,245,16), (16,117,245),(16,117,245)]
-model = keras.models.load_model(os.path.join('models', 'test9.h5'))
+model = keras.models.load_model(os.path.join('models', 'test8.h5'))
 
 @app.route('/')
 def home_endpoint():
@@ -80,9 +80,9 @@ def run_model(frame, frame_no):
         sequence.append(keypoints)
         last_frames = sequence[-frame_rate:]
         
-        # if len(last_frames) == frame_rate:
+        if len(last_frames) == frame_rate:
         # if ((int(frame_no) % frame_rate == 0) and (len(last_frames) == frame_rate)):
-        if len(sequence) % 10 == 0 and int(frame_no) > frame_rate:
+        # if len(sequence) % frame_rate == 0 and int(frame_no) >= frame_rate:
             res = model.predict(np.expand_dims(last_frames, axis=0))[0]
             print(actions[np.argmax(res)])
             result_p = actions[np.argmax(res)]
@@ -91,9 +91,13 @@ def run_model(frame, frame_no):
 
 @app.route('/sendImg/<frameCount>', methods=['GET', 'POST'])
 def get_image(frameCount):
-    image_str = flask.request.files['image'].read()
-    image_bytes = np.fromstring(image_str, np.uint8)
-    frame = cv2.imdecode(image_bytes, cv2.IMREAD_UNCHANGED)
+    imagefile = flask.request.files['image']
+    filename = werkzeug.utils.secure_filename(imagefile.filename)
+    imagefile.save(os.path.join("frames", filename))
+    frame = cv2.imread(os.path.join("frames", filename))
+    # image_str = flask.request.files['image'].read()
+    # image_bytes = np.fromstring(image_str, np.uint8)
+    # frame = cv2.imdecode(image_bytes, cv2.IMREAD_UNCHANGED)
     print("\nReceived", frameCount, "frames. len(seq)=", len(sequence))
     return(run_model(frame, frameCount))
     return "nothing"
