@@ -10,14 +10,14 @@ from flask import Flask, request
 app = Flask(__name__)
 
 global model
-# global frame_paths
+global frame_paths
 global frame_rate
 global mp_holistic
 global mp_drawing
 global actions
 global colors
 
-# frame_paths = []
+frame_paths = []
 frame_rate = 25
 mp_holistic = mp.solutions.holistic # Holistic model - make our detection
 mp_drawing = mp.solutions.drawing_utils # Drawing utilities - make our drawings
@@ -67,15 +67,15 @@ def run_model():
     result_p = "nothing"
     with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
         
-        all_frames = os.listdir('./frames')
-        new_list = all_frames[-25:]
+        # all_frames = os.listdir('./frames')
+        # new_list = all_frames[-25:]
         
         # new_list = os.listdir('frames')[-25:]
-        # new_list = frame_paths[-25:]
-        imgcount = len(new_list)
-        for i in range(imgcount):
+        new_list = frame_paths[-25:]
+        for img in new_list:
             # Read feed
-            frame = cv2.imread(os.path.join("frames", new_list[i]))
+            # frame = cv2.imread(os.path.join("frames", new_list[i]))
+            frame = cv2.imread(img)
             frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
 
             # Make detections
@@ -98,32 +98,33 @@ def run_model():
 
 @app.route('/sendImg/<frameCount>', methods=['GET', 'POST'])
 def get_image(frameCount):
-    # imagefile = flask.request.files['image']
-    # filename = werkzeug.utils.secure_filename(imagefile.filename)
-    
-    # frame_paths.append(os.path.join("frames", filename))
-    
-    # # print("\nReceived image File name : ", frame_paths[-1])
-    # imagefile.save("frames/" + filename)
-    # print("\nReceived", len(frame_paths), "frames")
-    # if len(frame_paths) % 25 == 0:
-    #     return(run_model())
-    # if len(frame_paths)>=500:
-    #     # for i in range(50):
-    #         # if (os.path.isfile(frame_paths[i])):
-    #             # os.remove(frame_paths[i])
-    #     del frame_paths[:50]
-    # return ("nothing")
-    
     imagefile = flask.request.files['image']
     filename = werkzeug.utils.secure_filename(imagefile.filename)
-    count = int(frameCount)
+    
+    frame_paths.append(os.path.join("frames", filename))
+    
     # print("\nReceived image File name : ", frame_paths[-1])
     imagefile.save("frames/" + filename)
-    print("\nReceived", frameCount, "frames")
-    if count % 25 == 0:
-        return(run_model())
+    print("\nReceived", len(frame_paths), "frames")
+    if len(frame_paths) % 25 == 0:
+        return (run_model())
+    
+    if len(frame_paths)>=500:
+        for i in range(100):
+            if (os.path.isfile(frame_paths[i])):
+                os.remove(frame_paths[i])
+        del frame_paths[:100]
     return ("nothing")
+    
+    # imagefile = flask.request.files['image']
+    # filename = werkzeug.utils.secure_filename(imagefile.filename)
+    # count = int(frameCount)
+    # # print("\nReceived image File name : ", frame_paths[-1])
+    # imagefile.save("frames/" + filename)
+    # print("\nReceived", frameCount, "frames")
+    # if count % 25 == 0:
+    #     return(run_model())
+    # return ("nothing")
 
 @app.route('/predict', methods=['POST'])
 def get_prediction():
