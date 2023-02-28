@@ -91,13 +91,13 @@ def run_model(frame, frame_no):
 
 @app.route('/sendImg/<frameCount>', methods=['GET', 'POST'])
 def get_image(frameCount):
-    imagefile = flask.request.files['image']
-    filename = werkzeug.utils.secure_filename(imagefile.filename)
-    imagefile.save(os.path.join("frames", filename))
-    frame = cv2.imread(os.path.join("frames", filename))
-    # image_str = flask.request.files['image'].read()
-    # image_bytes = np.fromstring(image_str, np.uint8)
-    # frame = cv2.imdecode(image_bytes, cv2.IMREAD_UNCHANGED)
+#    imagefile = flask.request.files['image']
+#    filename = werkzeug.utils.secure_filename(imagefile.filename)
+#    imagefile.save(os.path.join("frames", filename))
+#    frame = cv2.imread(os.path.join("frames", filename))
+    image_str = flask.request.files['image'].read()
+    image_bytes = np.fromstring(image_str, np.uint8)
+    frame = cv2.imdecode(image_bytes, cv2.IMREAD_UNCHANGED)
     print("\nReceived", frameCount, "frames. len(seq)=", len(sequence))
     return(run_model(frame, frameCount))
     return "nothing"
