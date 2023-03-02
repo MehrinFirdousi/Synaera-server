@@ -91,17 +91,17 @@ def run_model(frame, frame_no):
             result_p = actions[np.argmax(res)]
             predictions.append(np.argmax(res))
 
-            # if np.unique(predictions[-10:])[0]==np.argmax(res): 
-            #     if res[np.argmax(res)] > threshold: 
+            if np.unique(predictions[-10:])[0]==np.argmax(res): 
+                if res[np.argmax(res)] > threshold: 
                     
-            #         if len(sentence) > 0: 
-            #             if actions[np.argmax(res)] != sentence[-1]:
-            #                 sentence.append(actions[np.argmax(res)])
-            #         else:
-            #             sentence.append(actions[np.argmax(res)])
-            # if len(sentence) > 5: 
-            #     sentence = sentence[-5:]
-            # result_p = join(sentence)
+                    if len(sentence) > 0: 
+                        if actions[np.argmax(res)] != sentence[-1]:
+                            sentence.append(actions[np.argmax(res)])
+                    else:
+                        sentence.append(actions[np.argmax(res)])
+            if len(sentence) > 5: 
+                sentence = sentence[-5:]
+            result_p = join(sentence)
             
     return (result_p)
 
