@@ -5,6 +5,7 @@ import keras.models
 import os
 import cv2
 import mediapipe as mp
+from os.path import join
 from PIL import Image
 from flask import Flask, request
 
@@ -64,7 +65,9 @@ def prob_viz(res, actions, input_frame, colors):
 
 def run_model(frame, frame_no):
     predictions = []
+    sentence = []
     result_p = "nothing"
+    threshold = 0.5
     with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
         
         frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
@@ -87,6 +90,19 @@ def run_model(frame, frame_no):
             print(actions[np.argmax(res)])
             result_p = actions[np.argmax(res)]
             predictions.append(np.argmax(res))
+
+            if np.unique(predictions[-10:])[0]==np.argmax(res): 
+                if res[np.argmax(res)] > threshold: 
+                    
+                    if len(sentence) > 0: 
+                        if actions[np.argmax(res)] != sentence[-1]:
+                            sentence.append(actions[np.argmax(res)])
+                    else:
+                        sentence.append(actions[np.argmax(res)])
+            if len(sentence) > 5: 
+                sentence = sentence[-5:]
+            result_p = join(sentence)
+            
     return (result_p)
 
 @app.route('/sendImg/<frameCount>', methods=['GET', 'POST'])
