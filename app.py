@@ -14,6 +14,7 @@ app = Flask(__name__)
 global model
 global frame_rate
 global sequence
+global predictions
 global mp_holistic
 global mp_drawing
 global actions
@@ -21,6 +22,7 @@ global colors
 
 frame_rate = 25
 sequence = []
+predictions = []
 mp_holistic = mp.solutions.holistic # Holistic model - make our detection
 mp_drawing = mp.solutions.drawing_utils # Drawing utilities - make our drawings
 actions = np.array(['NoSign','hello', 'thanks', 'iloveyou'])
@@ -64,10 +66,9 @@ def prob_viz(res, actions, input_frame, colors):
     return output_frame
 
 def run_model(frame, frame_no):
-    predictions = []
-    sentence = []
     result_p = "nothing"
-    threshold = 0.5
+    # sentence = []
+    # threshold = 0.5
     with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
         
         frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
@@ -88,8 +89,11 @@ def run_model(frame, frame_no):
         # if len(sequence) % frame_rate == 0 and int(frame_no) >= frame_rate:
             res = model.predict(np.expand_dims(last_frames, axis=0))[0]
             print(actions[np.argmax(res)])
-            result_p = actions[np.argmax(res)]
+            if len(predictions) > 0:
+                if predictions[-1]==np.argmax(res):
+                    return "nothing"
             predictions.append(np.argmax(res))
+            result_p = actions[np.argmax(res)]
 
             # if np.unique(predictions[-10:])[0]==np.argmax(res): 
             #     if res[np.argmax(res)] > threshold: 
@@ -101,7 +105,8 @@ def run_model(frame, frame_no):
             #             sentence.append(actions[np.argmax(res)])
             # if len(sentence) > 5: 
             #     sentence = sentence[-5:]
-            # result_p = join(sentence)
+            # result_p = ' '.join(sentence)
+            # print("final: ", result_p)
             
     return (result_p)
 
