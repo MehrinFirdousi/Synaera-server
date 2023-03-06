@@ -13,6 +13,7 @@ import json
 app = Flask(__name__)
 
 global model
+global num_frames_per_request
 global frame_rate
 global sequence
 global predictions
@@ -22,13 +23,13 @@ global actions
 global colors
 
 frame_rate = 25
+num_frames_per_request = 5
 sequence = []
 predictions = []
 mp_holistic = mp.solutions.holistic # Holistic model - make our detection
 mp_drawing = mp.solutions.drawing_utils # Drawing utilities - make our drawings
-actions = np.array(['NoSign','hello', 'thanks', 'iloveyou'])
-colors = [(245,117,16), (117,245,16), (16,117,245),(16,117,245)]
-model = keras.models.load_model(os.path.join('models', 'test8.h5'))
+actions = np.array(['NoSign','hello', 'thanks', 'please', 'sorry', 'you', 'work', 'where'])
+model = keras.models.load_model(os.path.join('models', 'Demo2.h5'))
 
 @app.route('/')
 def home_endpoint():
@@ -58,35 +59,33 @@ def extract_keypoints(results):
     rh = np.array([[res.x, res.y, res.z] for res in results.right_hand_landmarks.landmark]).flatten() if results.right_hand_landmarks else np.zeros(21*3)
     return np.concatenate([pose, face, lh, rh])
 
-def prob_viz(res, actions, input_frame, colors):
-    output_frame = input_frame.copy()
-    for num, prob in enumerate(res):
-        cv2.rectangle(output_frame, (0,60+num*40), (int(prob*100), 90+num*40), colors[num], -1)
-        cv2.putText(output_frame, actions[num], (0, 85+num*40), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,255), 2, cv2.LINE_AA)
-        
-    return output_frame
-
-def run_model(frame, frame_no):
+def run_model(request_files, frame_no):
     result_p = "nothing"
-    # sentence = []
-    # threshold = 0.5
     with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
-        
-        # cv2.imshow('Cat', img)
-        # cv2.waitKey(0)
-        frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
+        for i in range(0, num_frames_per_request):
+            imgName = 'image'+str(i)
+            print(frame_no, "- img is ", imgName)
+            
+            # imagefile = request_files[imgName]
+            # filename = werkzeug.utils.secure_filename(imagefile.filename)
+            # imagefile.save(os.path.join("frames", frame_no+imgName+".jpg"))
+            # frame = cv2.imread(os.path.join("frames", filename))
 
-        # Make detections
-        image, results = mediapipe_detection(frame, holistic)
-        
-        # Draw landmarks
-        draw_landmarks(image, results)
+            image_str = request_files[imgName].read()
+            image_bytes = np.fromstring(image_str, np.uint8)
+            frame = cv2.imdecode(image_bytes, cv2.IMREAD_UNCHANGED)
+            frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
 
-        # Prediction logic
-        keypoints = extract_keypoints(results)
-        sequence.append(keypoints)
+            # Make detections
+            image, results = mediapipe_detection(frame, holistic)
+            
+            # Draw landmarks
+            draw_landmarks(image, results)
+
+            # Prediction logic
+            keypoints = extract_keypoints(results)
+            sequence.append(keypoints)
         last_frames = sequence[-frame_rate:]
-        
         if len(last_frames) == frame_rate:
         # if ((int(frame_no) % frame_rate == 0) and (len(last_frames) == frame_rate)):
         # if len(sequence) % frame_rate == 0 and int(frame_no) >= frame_rate:
@@ -96,58 +95,14 @@ def run_model(frame, frame_no):
                 if predictions[-1]==np.argmax(res):
                     return "nothing"
             predictions.append(np.argmax(res))
-            result_p = actions[np.argmax(res)]
-
-            # if np.unique(predictions[-10:])[0]==np.argmax(res): 
-            #     if res[np.argmax(res)] > threshold: 
-                    
-            #         if len(sentence) > 0: 
-            #             if actions[np.argmax(res)] != sentence[-1]:
-            #                 sentence.append(actions[np.argmax(res)])
-            #         else:
-            #             sentence.append(actions[np.argmax(res)])
-            # if len(sentence) > 5: 
-            #     sentence = sentence[-5:]
-            # result_p = ' '.join(sentence)
-            # print("final: ", result_p)
-            
+            result_p = actions[np.argmax(res)]            
     return (result_p)
 
 @app.route('/sendImg/<frameCount>', methods=['GET', 'POST'])
 def get_image(frameCount):
-#    imagefile = flask.request.files['image']
-#    filename = werkzeug.utils.secure_filename(imagefile.filename)
-#    imagefile.save(os.path.join("frames", filename))
-#    frame = cv2.imread(os.path.join("frames", filename))
-    
-    # image_str = flask.request.files['image'].read()
-    # image_bytes = np.fromstring(image_str, np.uint8)
-    # frame = cv2.imdecode(image_bytes, cv2.IMREAD_UNCHANGED)
-    
-    # image_arr = request.get_json()
-    image_bytes = []
-    image_lst = request.json
-    # image_bytes = [np.array(img) for img in image_lst]
-    print(type(image_lst[0]))
-    arr = np.array(image_lst[0])
-
-    for img in image_lst:
-        image_bytes.append(np.array(img))
-    # frame = cv2.imdecode(image_lst[0], cv2.IMREAD_UNCHANGED)
-
-    text_file = open("sample.txt", "w")
-    n = text_file.write(str(len(arr)))
-    text_file.close()
-
-    # cv2.imshow('Cat', frame)
-    # cv2.waitKey(0)
-    
-        
-    print(image_bytes[0][0], image_bytes[1][0], image_bytes[2][0])
-
     print("\nReceived", frameCount, "frames. len(seq)=", len(sequence))
-    # return(run_model(frame, frameCount))
-    return "nothing"
+    return(run_model(flask.request.files, frameCount))
+    # return "nothing"
 
 @app.route('/predict', methods=['POST'])
 def get_prediction():
