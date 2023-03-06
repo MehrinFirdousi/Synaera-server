@@ -1,3 +1,4 @@
+import ast
 import numpy as np
 import werkzeug
 import flask
@@ -6,8 +7,8 @@ import os
 import cv2
 import mediapipe as mp
 from os.path import join
-from PIL import Image
 from flask import Flask, request
+import json 
 
 app = Flask(__name__)
 
@@ -71,6 +72,8 @@ def run_model(frame, frame_no):
     # threshold = 0.5
     with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
         
+        # cv2.imshow('Cat', img)
+        # cv2.waitKey(0)
         frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
 
         # Make detections
@@ -116,11 +119,34 @@ def get_image(frameCount):
 #    filename = werkzeug.utils.secure_filename(imagefile.filename)
 #    imagefile.save(os.path.join("frames", filename))
 #    frame = cv2.imread(os.path.join("frames", filename))
-    image_str = flask.request.files['image'].read()
-    image_bytes = np.fromstring(image_str, np.uint8)
-    frame = cv2.imdecode(image_bytes, cv2.IMREAD_UNCHANGED)
+    
+    # image_str = flask.request.files['image'].read()
+    # image_bytes = np.fromstring(image_str, np.uint8)
+    # frame = cv2.imdecode(image_bytes, cv2.IMREAD_UNCHANGED)
+    
+    # image_arr = request.get_json()
+    image_bytes = []
+    image_lst = request.json
+    # image_bytes = [np.array(img) for img in image_lst]
+    print(type(image_lst[0]))
+    arr = np.array(image_lst[0])
+
+    for img in image_lst:
+        image_bytes.append(np.array(img))
+    # frame = cv2.imdecode(image_lst[0], cv2.IMREAD_UNCHANGED)
+
+    text_file = open("sample.txt", "w")
+    n = text_file.write(str(len(arr)))
+    text_file.close()
+
+    # cv2.imshow('Cat', frame)
+    # cv2.waitKey(0)
+    
+        
+    print(image_bytes[0][0], image_bytes[1][0], image_bytes[2][0])
+
     print("\nReceived", frameCount, "frames. len(seq)=", len(sequence))
-    return(run_model(frame, frameCount))
+    # return(run_model(frame, frameCount))
     return "nothing"
 
 @app.route('/predict', methods=['POST'])
@@ -138,4 +164,4 @@ def test_endpoint(name):
 
 if __name__ == '__main__':
     # load_model()  # load model at the beginning once only
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=80)
