@@ -28,8 +28,9 @@ sequence = []
 predictions = []
 mp_holistic = mp.solutions.holistic # Holistic model - make our detection
 mp_drawing = mp.solutions.drawing_utils # Drawing utilities - make our drawings
-actions = np.array(['NoSign','hello', 'thanks', 'please', 'sorry', 'you', 'work', 'where'])
-model = keras.models.load_model(os.path.join('models', 'Demo2.h5'))
+#actions = np.array(['NoSign','hello', 'thanks', 'please', 'sorry', 'you', 'work', 'where'])
+actions = np.array(['NoSign','hello', 'thanks', 'iloveyou'])
+model = keras.models.load_model(os.path.join('models', 'test8.h5'))
 
 @app.route('/')
 def home_endpoint():
@@ -119,4 +120,4 @@ def test_endpoint(name):
 
 if __name__ == '__main__':
     # load_model()  # load model at the beginning once only
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=80)
