@@ -120,4 +120,4 @@ def test_endpoint(name):
 
 if __name__ == '__main__':
     # load_model()  # load model at the beginning once only
-    app.run(host='0.0.0.0', port=80)
+    app.run(host='0.0.0.0', port=5000)
