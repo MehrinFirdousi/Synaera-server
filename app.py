@@ -28,7 +28,7 @@ sequence = []
 predictions = []
 mp_holistic = mp.solutions.holistic # Holistic model - make our detection
 mp_drawing = mp.solutions.drawing_utils # Drawing utilities - make our drawings
-#actions = np.array(['NoSign','hello', 'thanks', 'please', 'sorry', 'you', 'work', 'where'])
+# actions = np.array(['NoSign','hello', 'thanks', 'please', 'sorry', 'you', 'work', 'where'])
 actions = np.array(['NoSign','hello', 'thanks', 'iloveyou'])
 model = keras.models.load_model(os.path.join('models', 'test8.h5'))
 
@@ -60,6 +60,7 @@ def extract_keypoints(results):
     rh = np.array([[res.x, res.y, res.z] for res in results.right_hand_landmarks.landmark]).flatten() if results.right_hand_landmarks else np.zeros(21*3)
     return np.concatenate([pose, face, lh, rh])
 
+# CHAR LIMIT
 def run_model(request_files, frame_no):
     result_p = "nothing"
     with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
@@ -70,7 +71,7 @@ def run_model(request_files, frame_no):
             # imagefile = request_files[imgName]
             # filename = werkzeug.utils.secure_filename(imagefile.filename)
             # imagefile.save(os.path.join("frames", frame_no+imgName+".jpg"))
-            # frame = cv2.imread(os.path.join("frames", filename))
+            # frame = cv2.imread(os.path.join("frames", frame_no+imgName+".jpg"))
 
             image_str = request_files[imgName].read()
             image_bytes = np.fromstring(image_str, np.uint8)
