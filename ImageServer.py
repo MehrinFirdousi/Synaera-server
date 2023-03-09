@@ -44,11 +44,11 @@ isAuth = False
 # plain-text passwords. Users credentials are username:password key-values
 # WARNING: Never use plain-text passwords on a real application.
 dummyUserDB = { 
-    # Add more users as needed
-    "user1": "pass1",
-    "user2": "pass2",
-    "Alice": "123",
-    "Bob": "456"
+	# Add more users as needed
+	"user1": "pass1",
+	"user2": "pass2",
+	"Alice": "123",
+	"Bob": "456"
 }
 
 # Map of authenticated session id's and respective usernames
@@ -61,6 +61,7 @@ frameCount = [1]
 # ------------------------ START SYNAERA ML FUNCTIONS ------------------------
 
 frame_rate = 25
+frames = []
 sequence = []
 predictions = []
 mp_holistic = mp.solutions.holistic # Holistic model - make our detection
@@ -71,92 +72,115 @@ model = keras.models.load_model(os.path.join('models', 'Demo.h5'))
 
 # To extract keypoint values from frame using mediapipe
 def mediapipe_detection(image, model):
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB) # COLOR CONVERSION BGR 2 RGB
-    image.flags.writeable = False                  # Image is no longer writeable
-    results = model.process(image)                 # Make prediction
-    image.flags.writeable = True                   # Image is now writeable
-    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR) # COLOR COVERSION RGB 2 BGR
-    return image, results
+	image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB) # COLOR CONVERSION BGR 2 RGB
+	image.flags.writeable = False                  # Image is no longer writeable
+	results = model.process(image)                 # Make prediction
+	image.flags.writeable = True                   # Image is now writeable
+	image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR) # COLOR COVERSION RGB 2 BGR
+	return image, results
 
 # To draw landmarks and pose connections on the frame using the results extracted
 def draw_landmarks(image, results):
-    mp_drawing.draw_landmarks(image, results.face_landmarks, mp_holistic.FACEMESH_TESSELATION) # Draw face connections
-    mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_holistic.POSE_CONNECTIONS) # Draw pose connections
-    mp_drawing.draw_landmarks(image, results.left_hand_landmarks, mp_holistic.HAND_CONNECTIONS) # Draw left hand connections
-    mp_drawing.draw_landmarks(image, results.right_hand_landmarks, mp_holistic.HAND_CONNECTIONS) # Draw right hand connections
+	mp_drawing.draw_landmarks(image, results.face_landmarks, mp_holistic.FACEMESH_TESSELATION) # Draw face connections
+	mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_holistic.POSE_CONNECTIONS) # Draw pose connections
+	mp_drawing.draw_landmarks(image, results.left_hand_landmarks, mp_holistic.HAND_CONNECTIONS) # Draw left hand connections
+	mp_drawing.draw_landmarks(image, results.right_hand_landmarks, mp_holistic.HAND_CONNECTIONS) # Draw right hand connections
 
 def extract_keypoints(results):
-    pose = np.array([[res.x, res.y, res.z, res.visibility] for res in results.pose_landmarks.landmark]).flatten() if results.pose_landmarks else np.zeros(33*4)
-    face = np.array([[res.x, res.y, res.z] for res in results.face_landmarks.landmark]).flatten() if results.face_landmarks else np.zeros(468*3)
-    lh = np.array([[res.x, res.y, res.z] for res in results.left_hand_landmarks.landmark]).flatten() if results.left_hand_landmarks else np.zeros(21*3)
-    rh = np.array([[res.x, res.y, res.z] for res in results.right_hand_landmarks.landmark]).flatten() if results.right_hand_landmarks else np.zeros(21*3)
-    return np.concatenate([pose, face, lh, rh])
+	pose = np.array([[res.x, res.y, res.z, res.visibility] for res in results.pose_landmarks.landmark]).flatten() if results.pose_landmarks else np.zeros(33*4)
+	face = np.array([[res.x, res.y, res.z] for res in results.face_landmarks.landmark]).flatten() if results.face_landmarks else np.zeros(468*3)
+	lh = np.array([[res.x, res.y, res.z] for res in results.left_hand_landmarks.landmark]).flatten() if results.left_hand_landmarks else np.zeros(21*3)
+	rh = np.array([[res.x, res.y, res.z] for res in results.right_hand_landmarks.landmark]).flatten() if results.right_hand_landmarks else np.zeros(21*3)
+	return np.concatenate([pose, face, lh, rh])
+
+def run_model_frame_batches(imageBytes):
+	sequence = []
+	predictions = []
+	result_p = "nothing"
+	nparr = np.frombuffer(imageBytes, np.uint8)
+	frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+	frames.append(frame)
+	if (len(frames) == frame_rate):
+		with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
+			for frame in frames:
+				# Make detections
+				image, results = mediapipe_detection(frame, holistic)
+				
+				# Draw landmarks
+				draw_landmarks(image, results)
+
+				# Prediction logic
+				keypoints = extract_keypoints(results)
+				sequence.append(keypoints)
+			res = model.predict(np.expand_dims(sequence, axis=0))[0]
+			print(actions[np.argmax(res)])
+			if len(predictions) > 0:
+				if predictions[-1]==np.argmax(res):
+					return "nothing"
+			predictions.append(np.argmax(res))
+			result_p = actions[np.argmax(res)]
+			
+	return (result_p)
 
 def run_model(imageBytes):
-    result_p = "nothing"
-    with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
-        nparr = np.frombuffer(imageBytes, np.uint8)
-        frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-        # frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
+	result_p = "nothing"
+	with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
+		nparr = np.frombuffer(imageBytes, np.uint8)
+		frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+		# frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
+		image, results = mediapipe_detection(frame, holistic)
+		draw_landmarks(image, results)
+		keypoints = extract_keypoints(results)
+		sequence.append(keypoints)
 
-        # Make detections
-        image, results = mediapipe_detection(frame, holistic)
-        
-        # Draw landmarks
-        draw_landmarks(image, results)
-
-        # Prediction logic
-        keypoints = extract_keypoints(results)
-        sequence.append(keypoints)
-
-    imgNo = str(len(frameCount))
-    cv2.imwrite('frames/img'+imgNo+'.jpg', frame)
-    frameCount.append(1)
-    last_frames = sequence[-frame_rate:]
-    if len(last_frames) == frame_rate:
-        res = model.predict(np.expand_dims(last_frames, axis=0))[0]
-        print(imgNo, actions[np.argmax(res)])
-        if len(predictions) > 0:
-            if predictions[-1]==np.argmax(res):
-                return "nothing"
-        predictions.append(np.argmax(res))
-        result_p = actions[np.argmax(res)]
-    # if ((int(frame_no) % frame_rate == 0) and (len(last_frames) == frame_rate)):
-    # if len(sequence) % 12 == 0 or len(sequence) == 25:
-    #     last_frames = sequence[-frame_rate:]
-    #     if (len(last_frames) == 25):
-    #         res = model.predict(np.expand_dims(last_frames, axis=0))[0]
-    #         print(imgNo, actions[np.argmax(res)])
-    #         if len(predictions) > 0:
-    #             if predictions[-1]==np.argmax(res):
-    #                 return "nothing"
-    #         predictions.append(np.argmax(res))
-    #         result_p = actions[np.argmax(res)]
-    return (result_p)
+	imgNo = str(len(frameCount))
+	# cv2.imwrite('frames/img'+imgNo+'.jpg', frame)
+	frameCount.append(1)
+	last_frames = sequence[-frame_rate:]
+	if len(last_frames) == frame_rate:
+		res = model.predict(np.expand_dims(last_frames, axis=0))[0]
+		print(imgNo, actions[np.argmax(res)])
+		if len(predictions) > 0:
+			if predictions[-1]==np.argmax(res):
+				return "nothing"
+		predictions.append(np.argmax(res))
+		result_p = actions[np.argmax(res)]
+	# if ((int(frame_no) % frame_rate == 0) and (len(last_frames) == frame_rate)):
+	# if len(sequence) % 12 == 0 or len(sequence) == 25:
+	#     last_frames = sequence[-frame_rate:]
+	#     if (len(last_frames) == 25):
+	#         res = model.predict(np.expand_dims(last_frames, axis=0))[0]
+	#         print(imgNo, actions[np.argmax(res)])
+	#         if len(predictions) > 0:
+	#             if predictions[-1]==np.argmax(res):
+	#                 return "nothing"
+	#         predictions.append(np.argmax(res))
+	#         result_p = actions[np.argmax(res)]
+	return (result_p)
 
 # ------------------------ END SYNAERA ML FUNCTIONS ------------------------
 
 @sio.event
 def connect(sid, environ):
-    print('connect', sid)
-    print(activeUsers)
+	print('connect', sid)
+	print(activeUsers)
 
 # Method used for user "dummy" authentication using an in-memory dummy database. 
 # This can be used to authenticate the user with other server/service.
 # WARNING: never use plain-text passwords on a real application.
 @sio.event
 def authenticate(sid, username, password, clientCallbackEvent):
-    user = dummyUserDB.get(username)
-    if isAuth == False or (user is not None and user == password):
-        # add username to the session
-        addUserSession(sid, username)
-        sio.emit(clientCallbackEvent, True)
-        print("User [" + username +"] authenticated.")
-    else:
-        sio.emit(clientCallbackEvent, False)
-        sio.sleep(2) # give time to the socket emit the callback to the user
-        sio.disconnect(sid)
-        print("User [" + username +"] authentication failed.")
+	user = dummyUserDB.get(username)
+	if isAuth == False or (user is not None and user == password):
+		# add username to the session
+		addUserSession(sid, username)
+		sio.emit(clientCallbackEvent, True)
+		print("User [" + username +"] authenticated.")
+	else:
+		sio.emit(clientCallbackEvent, False)
+		sio.sleep(2) # give time to the socket emit the callback to the user
+		sio.disconnect(sid)
+		print("User [" + username +"] authentication failed.")
 
 # This is the main method that the client calls when streaming the pictures to 
 # the server. Each receiveImage event is already processed in a new thread.
@@ -164,64 +188,69 @@ def authenticate(sid, username, password, clientCallbackEvent):
 # received in python as Bytes.
 @sio.event
 def receiveImage(sid, imageBytes):
-    # HINT: Process the image here or send image to another server here
-    run_model(imageBytes)
-    if(isDisplay):
-        displayImage(activeSessions[sid], bytes(imageBytes))
+	# HINT: Process the image here or send image to another server here
+	run_model(imageBytes)
+	if(isDisplay):
+		displayImage(activeSessions[sid], bytes(imageBytes))
 
 @sio.event
 def disconnect(sid):
-    print('disconnect', sid)
-    deleteUserSession(sid)
-    print(activeUsers)
-    if isDisplay:
-        cv2.destroyAllWindows() # Doesn't work well in Unix environments = Zombie window
-        cv2.waitKey(1)
+	print('disconnect', sid)
+	sequence.clear()
+	predictions.clear()
+	frameCount.clear()
+	frames.clear()
+	print("cleared prediction data")
+	deleteUserSession(sid)
+	print(activeUsers)
+	if isDisplay:
+		cv2.destroyAllWindows() # Doesn't work well in Unix environments = Zombie window
+		cv2.waitKey(1)
 
 def addUserSession(sid, username):
-    activeSessions[sid] = username
-    activeUsers[username] = sid
+	activeSessions[sid] = username
+	activeUsers[username] = sid
 
 def deleteUserSession(sid):
-    username = activeSessions[sid]
-    activeSessions.pop(sid, None)
-    activeUsers.pop(username, None)
+	username = activeSessions[sid]
+	activeSessions.pop(sid, None)
+	activeUsers.pop(username, None)
 
 def displayImage(username, imageBytes):
-    # Decode image from bytes
-    nparr = np.frombuffer(imageBytes, np.uint8)
-    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-    imgNo = str(len(frameCount))
-    cv2.imwrite('frames/img'+imgNo+'.jpg', img)
-    frameCount.append(1)
-    print("received ", imgNo)
-    # Show image after decoded
-    # cv2.namedWindow(username, cv2.WINDOW_AUTOSIZE)
-    # cv2.imshow(username, img)
-    # cv2.waitKey(1)
+	# Decode image from bytes
+	nparr = np.frombuffer(imageBytes, np.uint8)
+	img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+	imgNo = str(len(frameCount))
+	# cv2.imwrite('frames/img'+imgNo+'.jpg', img)
+	frameCount.append(1)
+	print("received ", imgNo)
+	# Show image after decoded
+	# cv2.namedWindow(username, cv2.WINDOW_AUTOSIZE)
+	# cv2.imshow(username, img)
+	# cv2.waitKey(1)
 
 def executeCommandArgs(argv):
-    global ip, port, isDisplay, isAuth, frameCount
-    scriptName = argv[0]
-    try:
-        opts, args = getopt.getopt(argv[1:], "adhi:p:", ["ip=", "port=", "display", "auth"])
-    except getopt.GetoptError: # wrong commands
-        print(scriptName + " -i <server_ip> -p <server_port>")
-        sys.exit(2)
+	global ip, port, isDisplay, isAuth, frameCount
+	scriptName = argv[0]
+	try:
+		opts, args = getopt.getopt(argv[1:], "adhi:p:", ["ip=", "port=", "display", "auth"])
+	except getopt.GetoptError: # wrong commands
+		print(scriptName + " -i <server_ip> -p <server_port>")
+		sys.exit(2)
 
-    for opt, arg in opts:
-        if opt == "-h": # help command
-            print(scriptName + " -i <server_ip> -p <server_port")
-            sys.exit()
-        elif opt in ("-i", "--ip"):
-            ip = arg
-        elif opt in ("-p", "--port"):
-            port = int(arg)
-        elif opt in ("-d", "--display"):
-            isDisplay = True
-        elif opt in ("-a", "--auth"):
-            isAuth = True
+	for opt, arg in opts:
+		if opt == "-h": # help command
+			print(scriptName + " -i <server_ip> -p <server_port")
+			sys.exit()
+		elif opt in ("-i", "--ip"):
+			ip = arg
+		elif opt in ("-p", "--port"):
+			port = int(arg)
+		elif opt in ("-d", "--display"):
+			isDisplay = True
+		elif opt in ("-a", "--auth"):
+			isAuth = True
 
 if __name__ == '__main__':
-    executeCommandArgs(sys.argv)
-    eventlet.wsgi.server(eventlet.listen((ip, port)), app)
+	executeCommandArgs(sys.argv)
+	eventlet.wsgi.server(eventlet.listen((ip, port)), app)
