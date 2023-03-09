@@ -37,7 +37,7 @@ app = socketio.WSGIApp(sio)
 
 # Default server IP and server Port
 ip = "0.0.0.0" 
-port = 8080
+port = 5000
 
 # Display the image on a OpenCV window
 isDisplay = False
@@ -80,13 +80,13 @@ mp_holistic = mp.solutions.holistic # Holistic model - make our detection
 mp_drawing = mp.solutions.drawing_utils # Drawing utilities - make our drawings
 actions = np.array(['NoSign','hello', 'thanks', 'please', 'sorry', 'you', 'work', 'where'])
 # actions = np.array(['NoSign','hello', 'thanks', 'iloveyou'])
-model = keras.models.load_model(os.path.join('models', 'Demo.h5'))
+cv_model = keras.models.load_model(os.path.join('models', 'Demo.h5'))
 
 # To extract keypoint values from frame using mediapipe
-def mediapipe_detection(image, model):
+def mediapipe_detection(image, cv_model):
 	image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB) # COLOR CONVERSION BGR 2 RGB
 	image.flags.writeable = False                  # Image is no longer writeable
-	results = model.process(image)                 # Make prediction
+	results = cv_model.process(image)                 # Make prediction
 	image.flags.writeable = True                   # Image is now writeable
 	image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR) # COLOR COVERSION RGB 2 BGR
 	return image, results
@@ -125,7 +125,7 @@ def run_model_frame_batches(imageBytes):
 				# Prediction logic
 				keypoints = extract_keypoints(results)
 				sequence.append(keypoints)
-			res = model.predict(np.expand_dims(sequence, axis=0))[0]
+			res = cv_model.predict(np.expand_dims(sequence, axis=0))[0]
 			print(actions[np.argmax(res)])
 			if len(predictions) > 0:
 				if predictions[-1]==np.argmax(res):
@@ -151,7 +151,7 @@ def run_model(imageBytes):
 	frameCount.append(1)
 	last_frames = sequence[-frame_rate:]
 	if len(last_frames) == frame_rate:
-		res = model.predict(np.expand_dims(last_frames, axis=0))[0]
+		res = cv_model.predict(np.expand_dims(last_frames, axis=0))[0]
 		print(imgNo, actions[np.argmax(res)])
 		if len(predictions) > 0:
 			if predictions[-1]==np.argmax(res):
@@ -219,12 +219,12 @@ decoder_outputs, _, _ = decoder_lstm(dec_emb, initial_state=encoder_states)
 decoder_dense = Dense(num_decoder_tokens, activation='softmax')
 decoder_outputs = decoder_dense(decoder_outputs)
 # Define the model that will turn `encoder_input_data` & `decoder_input_data` into `decoder_target_data`
-model = Model([encoder_inputs, decoder_inputs], decoder_outputs)
+nlp_model = Model([encoder_inputs, decoder_inputs], decoder_outputs)
 
 print(colors.UNDERLINE_GREEN + 'Setting up Model:' + colors.ENDC, round(time.time() - st, 2), 'seconds')
 st = time.time()
 
-model.load_weights('nmt_weights_v5.h5')
+nlp_model.load_weights('nmt_weights_v5.h5')
 
 print(colors.UNDERLINE_GREEN + 'Loading Weights:' + colors.ENDC, round(time.time() - st, 2), 'seconds')
 st = time.time()
