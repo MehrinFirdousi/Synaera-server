@@ -107,7 +107,6 @@ def extract_keypoints(results):
 
 def run_model_frame_batches(imageBytes):
 	sequence = []
-	predictions = []
 	result_p = "nothing"
 	nparr = np.frombuffer(imageBytes, np.uint8)
 	frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
@@ -338,9 +337,10 @@ def preprocess_sentence(sentence):
 
 def gloss_to_english():
 	glossInput = ""
-	if len(predictions) == 3:
-		for res in predictions:
-			glossInput += actions[np.argmax(res)] + " "
+	# last sign was nosign
+	if predictions[-1] == 0:
+		for res in predictions[:-1]:
+			glossInput += actions[res] + " "
 		glossInput = glossInput[:-1]
 		print(glossInput)
 		prep_input, question_flag, replaced_words = preprocess_sentence(glossInput)
@@ -359,8 +359,9 @@ def gloss_to_english():
 		# if decoded sentence contains ['who', 'what', 'when', 'where', 'why', 'how'] then add '?' at the end
 		if any(word in decoded_sentence for word in ['who', 'what', 'when', 'where', 'why', 'how']) and '?' not in decoded_sentence:
 			decoded_sentence = decoded_sentence.strip() + '?'
-		print("decoded: ", decoded_sentence)
-
+		print("decoded:", decoded_sentence)
+		predictions.clear()
+	
 
 # ------------------------ END SYNAERA NLP FUNCTIONS ------------------------
 # ------------------------ END SYNAERA NLP FUNCTIONS ------------------------
