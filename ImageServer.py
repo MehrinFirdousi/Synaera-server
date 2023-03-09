@@ -124,6 +124,7 @@ def run_model_frame_batches(imageBytes):
 				# Prediction logic
 				keypoints = extract_keypoints(results)
 				sequence.append(keypoints)
+			frames.clear()
 			res = cv_model.predict(np.expand_dims(sequence, axis=0))[0]
 			print(actions[np.argmax(res)])
 			if len(predictions) > 0:
@@ -131,7 +132,6 @@ def run_model_frame_batches(imageBytes):
 					return "nothing"
 			predictions.append(np.argmax(res))
 			result_p = actions[np.argmax(res)]
-			frames.clear()
 	return (result_p)
 
 def run_model(imageBytes):
@@ -338,29 +338,30 @@ def preprocess_sentence(sentence):
 def gloss_to_english():
 	glossInput = ""
 	# last sign was nosign
-	if predictions[-1] == 0:
-		for res in predictions[:-1]:
-			glossInput += actions[res] + " "
-		glossInput = glossInput[:-1]
-		print(glossInput)
-		prep_input, question_flag, replaced_words = preprocess_sentence(glossInput)
-		# if only 1 word is given, then no need to decode
-		decoded_sentence = decode_sequence(prep_input) if len(prep_input.split()) > 1 else prep_input
+	if (len(predictions) > 1):
+		if predictions[-1] == 0:
+			for res in predictions[:-1]:
+				glossInput += actions[res] + " "
+			glossInput = glossInput[:-1]
+			print(glossInput)
+			prep_input, question_flag, replaced_words = preprocess_sentence(glossInput)
+			# if only 1 word is given, then no need to decode
+			decoded_sentence = decode_sequence(prep_input) if len(prep_input.split()) > 1 else prep_input
 
-		# if '?' not in decoded sentence and original input had 'QM-wig' then add '?' at the end
-		if '?' not in decoded_sentence and question_flag == 1:
-			decoded_sentence = decoded_sentence.strip() + '?'
+			# if '?' not in decoded sentence and original input had 'QM-wig' then add '?' at the end
+			if '?' not in decoded_sentence and question_flag == 1:
+				decoded_sentence = decoded_sentence.strip() + '?'
 
-		# Replace the 'XXXXX' with the original single letter words
-		for word in replaced_words:
-			decoded_sentence = decoded_sentence.replace('xxxxx', word.replace('-',''), 1)
-		decoded_sentence = decoded_sentence.replace('xxxxx', '')
-		
-		# if decoded sentence contains ['who', 'what', 'when', 'where', 'why', 'how'] then add '?' at the end
-		if any(word in decoded_sentence for word in ['who', 'what', 'when', 'where', 'why', 'how']) and '?' not in decoded_sentence:
-			decoded_sentence = decoded_sentence.strip() + '?'
-		print("decoded:", decoded_sentence)
-		predictions.clear()
+			# Replace the 'XXXXX' with the original single letter words
+			for word in replaced_words:
+				decoded_sentence = decoded_sentence.replace('xxxxx', word.replace('-',''), 1)
+			decoded_sentence = decoded_sentence.replace('xxxxx', '')
+			
+			# if decoded sentence contains ['who', 'what', 'when', 'where', 'why', 'how'] then add '?' at the end
+			if any(word in decoded_sentence for word in ['who', 'what', 'when', 'where', 'why', 'how']) and '?' not in decoded_sentence:
+				decoded_sentence = decoded_sentence.strip() + '?'
+			print("decoded:", decoded_sentence)
+			predictions.clear()
 	
 
 # ------------------------ END SYNAERA NLP FUNCTIONS ------------------------
