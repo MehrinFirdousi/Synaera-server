@@ -135,9 +135,15 @@ def run_model_frame_batches(imageBytes):
 			frames.clear()
 			res = cv_model.predict(np.expand_dims(sequence, axis=0))[0]
 			print(actions[np.argmax(res)])
+			# check if prediction is nosign and predictions array is empty
+			if len(predictions) == 0:
+				if np.argmax(res) == 0:
+					return "nothing"
+			# check duplicate prediction
 			if len(predictions) > 0:
 				if predictions[-1]==np.argmax(res):
 					return "nothing"
+
 			predictions.append(np.argmax(res))
 			result_p = actions[np.argmax(res)]
 	return (result_p)
@@ -351,9 +357,9 @@ def preprocess_sentence(sentence):
 def gloss_to_english():
 	glossInput = ""
 	decoded_sentence = ""
-	if len(predictions) == 1 and predictions[-1] == 0:
-		predictions.clear()
-	elif len(predictions) > 1:
+	# if len(predictions) == 1 and predictions[-1] == 0:
+	# 	predictions.clear()
+	if len(predictions) > 1:
 		# last sign was nosign
 		if predictions[-1] == 0:
 			for res in predictions[:-1]:
