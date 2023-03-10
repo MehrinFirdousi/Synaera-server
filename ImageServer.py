@@ -351,8 +351,10 @@ def preprocess_sentence(sentence):
 def gloss_to_english():
 	glossInput = ""
 	decoded_sentence = ""
-	# last sign was nosign
-	if (len(predictions) > 1):
+	if len(predictions) == 1 and predictions[-1] == 0:
+		predictions.clear()
+	elif len(predictions) > 1:
+		# last sign was nosign
 		if predictions[-1] == 0:
 			for res in predictions[:-1]:
 				glossInput += actions[res] + " "
