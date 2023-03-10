@@ -70,7 +70,13 @@ class colors:
     UNDERLINE = '\033[4m'
     UNDERLINE_GREEN = '\033[4m' + '\033[92m'
 
-# ------------------------ START SYNAERA ML FUNCTIONS ------------------------
+# ------------------------ START SYNAERA CV FUNCTIONS ------------------------
+# ------------------------ START SYNAERA CV FUNCTIONS ------------------------
+# ------------------------ START SYNAERA CV FUNCTIONS ------------------------
+# ------------------------ START SYNAERA CV FUNCTIONS ------------------------
+# ------------------------ START SYNAERA CV FUNCTIONS ------------------------
+# ------------------------ START SYNAERA CV FUNCTIONS ------------------------
+# ------------------------ START SYNAERA CV FUNCTIONS ------------------------
 
 frame_rate = 25
 frames = []
@@ -111,6 +117,8 @@ def run_model_frame_batches(imageBytes):
 	nparr = np.frombuffer(imageBytes, np.uint8)
 	frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 	frames.append(frame)
+	cv2.imwrite('frames/img'+str(len(frames))+'.jpg', frame)
+	
 	print("received", len(frames))
 	if (len(frames) == frame_rate):
 		with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
@@ -160,7 +168,13 @@ def run_model(imageBytes):
 	
 	return (result_p)
 
-# ------------------------ END SYNAERA ML FUNCTIONS ------------------------
+# ------------------------ END SYNAERA CV FUNCTIONS ------------------------
+# ------------------------ END SYNAERA CV FUNCTIONS ------------------------
+# ------------------------ END SYNAERA CV FUNCTIONS ------------------------
+# ------------------------ END SYNAERA CV FUNCTIONS ------------------------
+# ------------------------ END SYNAERA CV FUNCTIONS ------------------------
+# ------------------------ END SYNAERA CV FUNCTIONS ------------------------
+# ------------------------ END SYNAERA CV FUNCTIONS ------------------------
 
 # ------------------------ START SYNAERA NLP FUNCTIONS ------------------------
 # ------------------------ START SYNAERA NLP FUNCTIONS ------------------------
@@ -334,9 +348,9 @@ def preprocess_sentence(sentence):
 
     return sentence, question_flag, replaced_words
 
-
 def gloss_to_english():
 	glossInput = ""
+	decoded_sentence = ""
 	# last sign was nosign
 	if (len(predictions) > 1):
 		if predictions[-1] == 0:
@@ -362,6 +376,7 @@ def gloss_to_english():
 				decoded_sentence = decoded_sentence.strip() + '?'
 			print("decoded:", decoded_sentence)
 			predictions.clear()
+	return (decoded_sentence)
 	
 
 # ------------------------ END SYNAERA NLP FUNCTIONS ------------------------
@@ -404,18 +419,25 @@ def authenticate(sid, username, password, clientCallbackEvent):
 # The image format is JPEG and is sent by the client in as binary data of byte[] 
 # received in python as Bytes.
 @sio.event
-def receiveImage(sid, imageBytes):
+def receiveImage(sid, imageBytes, clientCallBackEvent):
 	# HINT: Process the image here or send image to another server here
-	run_model_frame_batches(imageBytes)
-	gloss_to_english()
-	if(isDisplay):
-		displayImage(activeSessions[sid], bytes(imageBytes))
+	gloss = run_model_frame_batches(imageBytes)
+	real_text = gloss_to_english()
+	if gloss != "nothing":
+		if (len(real_text) == 0):
+			sio.emit(clientCallBackEvent, gloss)
+			print("gloss result:", gloss)
+		else:
+			sio.emit(clientCallBackEvent, real_text)
+			print("real result:", real_text)
+	# if(isDisplay):
+	# 	displayImage(activeSessions[sid], bytes(imageBytes))
 
 @sio.event
 def disconnect(sid):
 	print('disconnect', sid)
-	sequence.clear()
-	predictions.clear()
+	# sequence.clear()
+	# predictions.clear()
 	frameCount.clear()
 	frames.clear()
 	print("cleared prediction data")
