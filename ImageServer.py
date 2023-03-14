@@ -29,6 +29,7 @@ from keras.models import Model
 import time
 import ast
 
+model_weights='Model_10ws_4p.h5'
 # Default is 16 which can create a bootleneck for video streaming
 Payload.max_decode_packets = 256
 
@@ -46,8 +47,6 @@ isDisplay = False
 isAuth = False
 
 # Dummy in-memory key-value pairs user database for dummy authentication using 
-# plain-text passwords. Users credentials are username:password key-values
-# WARNING: Never use plain-text passwords on a real application.
 dummyUserDB = { 
 	# Add more users as needed
 	"user1": "pass1",
@@ -84,9 +83,10 @@ sequence = []
 predictions = []
 mp_holistic = mp.solutions.holistic # Holistic model - make our detection
 mp_drawing = mp.solutions.drawing_utils # Drawing utilities - make our drawings
-actions = np.array(['NoSign','hello', 'thanks', 'please', 'sorry', 'you', 'work', 'where'])
+# actions = np.array(['NoSign','hello', 'thanks', 'please', 'sorry', 'you', 'work', 'where'])
+actions = np.array([['NoSign','hello','thanks','sorry','you','work','where']])
 # actions = np.array(['NoSign','hello', 'thanks', 'iloveyou'])
-cv_model = keras.models.load_model(os.path.join('models', 'Demo.h5'))
+cv_model = keras.models.load_model(os.path.join('models', model_weights))
 
 # To extract keypoint values from frame using mediapipe
 def mediapipe_detection(image, cv_model):
@@ -117,8 +117,7 @@ def run_model_frame_batches(imageBytes):
 	nparr = np.frombuffer(imageBytes, np.uint8)
 	frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 	frames.append(frame)
-	cv2.imwrite('frames/img'+str(len(frames))+'.jpg', frame)
-	
+	# cv2.imwrite('frames/img'+str(len(frames))+'.jpg', frame)
 	print("received", len(frames))
 	if (len(frames) == frame_rate):
 		with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
