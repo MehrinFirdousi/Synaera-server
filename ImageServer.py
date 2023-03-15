@@ -116,8 +116,10 @@ def run_model_frame_batches(imageBytes):
 	result_p = "nothing"
 	nparr = np.frombuffer(imageBytes, np.uint8)
 	frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+	frame = cv2.flip(frame, 1)
 	frames.append(frame)
-	# cv2.imwrite('frames/img'+str(len(frames))+'.jpg', frame)
+
+	cv2.imwrite('frames/img'+str(len(frames))+'.jpg', frame)
 	print("received", len(frames))
 	if (len(frames) == frame_rate):
 		with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
