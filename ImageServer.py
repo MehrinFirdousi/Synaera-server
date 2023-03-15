@@ -84,8 +84,8 @@ predictions = []
 mp_holistic = mp.solutions.holistic # Holistic model - make our detection
 mp_drawing = mp.solutions.drawing_utils # Drawing utilities - make our drawings
 # actions = np.array(['NoSign','hello', 'thanks', 'please', 'sorry', 'you', 'work', 'where'])
-actions = np.array([['NoSign','hello','thanks','sorry','you','work','where']])
 # actions = np.array(['NoSign','hello', 'thanks', 'iloveyou'])
+actions = np.array(['NoSign', 'hello', 'you', 'work', 'where', 'how', 'your', 'day', 'b', 'o'])
 cv_model = keras.models.load_model(os.path.join('models', model_weights))
 
 # To extract keypoint values from frame using mediapipe
