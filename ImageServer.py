@@ -355,16 +355,20 @@ def preprocess_sentence(sentence):
 
     return sentence, question_flag, replaced_words
 
-def gloss_to_english():
+def gloss_to_english(recordingStopped):
 	glossInput = ""
 	decoded_sentence = ""
 	# if len(predictions) == 1 and predictions[-1] == 0:
 	# 	predictions.clear()
 	if len(predictions) > 1:
 		# last sign was nosign
-		if predictions[-1] == 0:
-			for res in predictions[:-1]:
-				glossInput += actions[res] + " "
+		if predictions[-1] == 0 or recordingStopped:
+			if recordingStopped and predictions[-1] != 0:
+				for res in predictions:
+					glossInput += actions[res] + " "
+			else:
+				for res in predictions[:-1]:
+					glossInput += actions[res] + " "
 			glossInput = glossInput[:-1]
 			print(glossInput)
 			prep_input, question_flag, replaced_words = preprocess_sentence(glossInput)
@@ -429,9 +433,8 @@ def authenticate(sid, username, password, clientCallbackEvent):
 # received in python as Bytes.
 @sio.event
 def receiveImage(sid, imageBytes, clientCallBackEvent):
-	# HINT: Process the image here or send image to another server here
 	gloss = run_model_frame_batches(imageBytes)
-	real_text = gloss_to_english()
+	real_text = gloss_to_english(False)
 	if gloss != "nothing":
 		if (len(real_text) == 0):
 			sio.emit(clientCallBackEvent, gloss)
@@ -441,6 +444,13 @@ def receiveImage(sid, imageBytes, clientCallBackEvent):
 			print("real result:", real_text)
 	# if(isDisplay):
 	# 	displayImage(activeSessions[sid], bytes(imageBytes))
+
+@sio.event
+def stopRecord(sid, clientCallBackEvent):
+	real_text = gloss_to_english(True)
+	if len(real_text) > 0:
+		sio.emit(clientCallBackEvent, real_text)
+		print("real result:", real_text)
 
 @sio.event
 def disconnect(sid):
