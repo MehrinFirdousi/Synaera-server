@@ -41,6 +41,8 @@ def extract_keypoints(results):
 	rh = np.array([[res.x, res.y, res.z] for res in results.right_hand_landmarks.landmark]).flatten() if results.right_hand_landmarks else np.zeros(21*3)
 	return np.concatenate([pose, face, lh, rh])
 
+# returns "nothing" when	the prediction is nosign and theres no predictions other till now, 
+# 							or when the new prediction is the same as the last prediction
 def run_model_frame_batches(imageBytes):
 	sequence = []
 	result_p = "nothing"
@@ -89,7 +91,6 @@ def run_model(imageBytes):
 		draw_landmarks(image, results)
 		keypoints = extract_keypoints(results)
 		sequence.append(keypoints)
-
 	imgNo = str(len(frameCount))
 	# cv2.imwrite('frames/img'+imgNo+'.jpg', frame)
 	frameCount.append(1)
@@ -97,6 +98,11 @@ def run_model(imageBytes):
 	if len(last_frames) == frame_rate:
 		res = cv_wts.predict(np.expand_dims(last_frames, axis=0))[0]
 		print(imgNo, actions[np.argmax(res)])
+		# check if predictions array is empty and new sign is nosign
+		if len(predictions) == 0:
+			if np.argmax(res) == 0:
+				return "nothing"
+		# check duplicate prediction
 		if len(predictions) > 0:
 			if predictions[-1]==np.argmax(res):
 				return "nothing"

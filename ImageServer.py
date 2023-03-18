@@ -1,15 +1,3 @@
-# This is a simple prototype server to receive stream of pictures from the 
-# AndroidCamStream client app.
-# 
-# This server is implemented with the socket.io framework that provides a
-# easy-to-use of WebSockets. Therefore, this is a SYNCHRONOUS client/server.
-# 
-# PLEASE NOTICE: 
-# The choice of synch client/server was intended for quick prototyping. However, 
-# due to the nature of the video-streaming use-case a more robust implementation
-# based on ASYNCHRONOUS client/server communication is strongly recommended. 
-# Socket.io also provides an asynch server API.
-
 import sys, getopt
 import eventlet
 import socketio
@@ -123,6 +111,18 @@ def receiveImage(sid, imageBytes, clientCallBackEvent):
 			print("real result:", real_text)
 	# if(isDisplay):
 	# 	displayImage(activeSessions[sid], bytes(imageBytes))
+
+@sio.event
+def receiveVideoStream(sid, imageBytes, clientCallBackEvent):
+	gloss = cv_model.run_model(imageBytes)
+	real_text = gloss_to_english(False)
+	if gloss != "nothing":
+		if (len(real_text) == 0):
+			sio.emit(clientCallBackEvent, gloss)
+			print("gloss result:", gloss)
+		else:
+			sio.emit(clientCallBackEvent, real_text)
+			print("real result:", real_text)
 
 @sio.event
 def stopRecord(sid, clientCallBackEvent):
