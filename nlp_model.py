@@ -1,4 +1,5 @@
 import re
+import numpy as np
 from keras.layers import Input, LSTM, Embedding, Dense
 from keras.models import Model
 import time
