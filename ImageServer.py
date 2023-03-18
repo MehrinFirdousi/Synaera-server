@@ -10,7 +10,6 @@
 # based on ASYNCHRONOUS client/server communication is strongly recommended. 
 # Socket.io also provides an asynch server API.
 #
-# Created by xetiro (aka Ruben Geraldes) on 28/09/2020.
 import sys, getopt
 import eventlet
 import socketio
@@ -119,7 +118,7 @@ def run_model_frame_batches(imageBytes):
 	frame = cv2.flip(frame, 1)
 	frames.append(frame)
 
-	cv2.imwrite('frames/img'+str(len(frames))+'.jpg', frame)
+	# cv2.imwrite('frames/img'+str(len(frames))+'.jpg', frame)
 	print("received", len(frames))
 	if (len(frames) == frame_rate):
 		with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
@@ -412,7 +411,6 @@ def connect(sid, environ):
 
 # Method used for user "dummy" authentication using an in-memory dummy database. 
 # This can be used to authenticate the user with other server/service.
-# WARNING: never use plain-text passwords on a real application.
 @sio.event
 def authenticate(sid, username, password, clientCallbackEvent):
 	user = dummyUserDB.get(username)
