@@ -55,12 +55,12 @@ decoder_outputs, _, _ = decoder_lstm(dec_emb, initial_state=encoder_states)
 decoder_dense = Dense(num_decoder_tokens, activation='softmax')
 decoder_outputs = decoder_dense(decoder_outputs)
 # Define the model that will turn `encoder_input_data` & `decoder_input_data` into `decoder_target_data`
-nlp_model = Model([encoder_inputs, decoder_inputs], decoder_outputs)
+nlp_wts = Model([encoder_inputs, decoder_inputs], decoder_outputs)
 
 print(colors.UNDERLINE_GREEN + 'Setting up Model:' + colors.ENDC, round(time.time() - st, 2), 'seconds')
 st = time.time()
 
-nlp_model.load_weights('nmt_weights_v5.h5')
+nlp_wts.load_weights('nmt_weights_v5.h5')
 
 print(colors.UNDERLINE_GREEN + 'Loading Weights:' + colors.ENDC, round(time.time() - st, 2), 'seconds')
 st = time.time()

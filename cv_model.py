@@ -1,6 +1,8 @@
 import keras.models
 import os
 import mediapipe as mp
+import numpy as np
+import cv2
 from os.path import join
 
 model_weights='Model_10ws_4p.h5'
@@ -13,13 +15,14 @@ mp_drawing = mp.solutions.drawing_utils # Drawing utilities - make our drawings
 # actions = np.array(['NoSign','hello', 'thanks', 'please', 'sorry', 'you', 'work', 'where'])
 # actions = np.array(['NoSign','hello', 'thanks', 'iloveyou'])
 actions = np.array(['NoSign', 'hello', 'you', 'work', 'where', 'how', 'your', 'day', 'b', 'o'])
-cv_model = keras.models.load_model(os.path.join('models', model_weights))
+cv_wts = keras.models.load_model(os.path.join('models', model_weights))
+frameCount = [1]
 
 # To extract keypoint values from frame using mediapipe
-def mediapipe_detection(image, cv_model):
+def mediapipe_detection(image, cv_wts):
 	image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB) # COLOR CONVERSION BGR 2 RGB
 	image.flags.writeable = False                  # Image is no longer writeable
-	results = cv_model.process(image)                 # Make prediction
+	results = cv_wts.process(image)                 # Make prediction
 	image.flags.writeable = True                   # Image is now writeable
 	image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR) # COLOR COVERSION RGB 2 BGR
 	return image, results
@@ -61,7 +64,7 @@ def run_model_frame_batches(imageBytes):
 				keypoints = extract_keypoints(results)
 				sequence.append(keypoints)
 			frames.clear()
-			res = cv_model.predict(np.expand_dims(sequence, axis=0))[0]
+			res = cv_wts.predict(np.expand_dims(sequence, axis=0))[0]
 			print(actions[np.argmax(res)])
 			# check if prediction is nosign and predictions array is empty
 			if len(predictions) == 0:
@@ -92,7 +95,7 @@ def run_model(imageBytes):
 	frameCount.append(1)
 	last_frames = sequence[-frame_rate:]
 	if len(last_frames) == frame_rate:
-		res = cv_model.predict(np.expand_dims(last_frames, axis=0))[0]
+		res = cv_wts.predict(np.expand_dims(last_frames, axis=0))[0]
 		print(imgNo, actions[np.argmax(res)])
 		if len(predictions) > 0:
 			if predictions[-1]==np.argmax(res):
