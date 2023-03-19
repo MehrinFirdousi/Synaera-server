@@ -37,6 +37,8 @@ activeSessions = {}
 # Map of authenticated usernames and respective session id's
 activeUsers = {}
 
+transcript = ""
+
 def gloss_to_english(recordingStopped):
 	glossInput = ""
 	decoded_sentence = ""
@@ -103,7 +105,7 @@ def video_gloss_to_english(videoPredictions):
 	for prediction in videoPredictions:
 		# if not nosign
 		if prediction != 0:
-			glossInput += cv_model.actions[res] + " "
+			glossInput += cv_model.actions[prediction] + " "
 		# if nosign and gloss input is not empty
 		elif len(glossInput) > 0:
 			print("gloss:", glossInput)
@@ -159,8 +161,19 @@ def receiveVideoStream(sid, imageBytes):
 	cv_model.store_frames(imageBytes)
 
 @sio.event
-def processVideo(sid, clientCallBackEvent):
-	return video_gloss_to_english(cv_model.run_model_on_video())
+def processVideo(sid):
+	# sio.emit(clientCallBackEvent, video_gloss_to_english(cv_model.run_model_on_video()))
+	transcript = video_gloss_to_english(cv_model.run_model_on_video())
+	if len(transcript) == 0:
+		transcript = "No ASL detected in video"
+
+@sio.event
+def checkTranscript(sid, clientCallBackEvent):
+	if len(transcript > 0):
+		sio.emit(clientCallBackEvent, transcript)
+		transcript = ""
+	else:
+		sio.emit(clientCallBackEvent, "")
 
 @sio.event
 def stopRecord(sid, clientCallBackEvent):
