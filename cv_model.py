@@ -122,16 +122,18 @@ def store_frames(imageBytes):
 def run_model_on_video():
 	videoSequence = []
 	videoPredictions = []
+	print("START MODEL EXEC ON VIDEO")
 	for frame in videoFrames:
+		print("processing frame:", len(videoSequence))
 		with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
 			image, results = mediapipe_detection(frame, holistic)
 			draw_landmarks(image, results)
 			keypoints = extract_keypoints(results)
 			videoSequence.append(keypoints)
-		last_frames = sequence[-frame_rate:]
+		last_frames = videoSequence[-frame_rate:]
 		if len(last_frames) == frame_rate:
 			res = cv_wts.predict(np.expand_dims(last_frames, axis=0))[0]
-			print(len(sequence), actions[np.argmax(res)])
+			print(len(videoSequence), actions[np.argmax(res)])
 			if len(videoPredictions) == 0:
 				if np.argmax(res) == 0:
 					continue

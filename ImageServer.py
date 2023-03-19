@@ -97,7 +97,9 @@ def video_gloss_to_english(videoPredictions):
 	glossInput = ""
 	final_sentence = ""
 	if len(videoPredictions) == 0:
+		print("no video predictions")
 		return
+	print("START NLP EXEC ON VIDEO PREDICTIONS")
 	for prediction in videoPredictions:
 		# if not nosign
 		if prediction != 0:
