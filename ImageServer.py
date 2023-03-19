@@ -73,6 +73,46 @@ def gloss_to_english(recordingStopped):
 			cv_model.predictions.clear()
 	return (decoded_sentence)
 
+def get_nlp_prediction(glossInput):
+	prep_input, question_flag, replaced_words = nlp_model.preprocess_sentence(glossInput)
+	# if only 1 word is given, then no need to decode
+	decoded_sentence = nlp_model.decode_sequence(prep_input) if len(prep_input.split()) > 1 else prep_input
+
+	# if '?' not in decoded sentence and original input had 'QM-wig' then add '?' at the end
+	if '?' not in decoded_sentence and question_flag == 1:
+		decoded_sentence = decoded_sentence.strip() + '?'
+
+	# Replace the 'XXXXX' with the original single letter words
+	for word in replaced_words:
+		decoded_sentence = decoded_sentence.replace('xxxxx', word.replace('-',''), 1)
+	decoded_sentence = decoded_sentence.replace('xxxxx', '')
+	
+	# if decoded sentence contains ['who', 'what', 'when', 'where', 'why', 'how'] then add '?' at the end
+	if any(word in decoded_sentence for word in ['who', 'what', 'when', 'where', 'why', 'how']) and '?' not in decoded_sentence:
+		decoded_sentence = decoded_sentence.strip() + '?'
+	print("decoded:", decoded_sentence)
+	return decoded_sentence
+
+def video_gloss_to_english(videoPredictions):
+	glossInput = ""
+	final_sentence = ""
+	if len(videoPredictions) == 0:
+		return
+	for prediction in videoPredictions:
+		# if not nosign
+		if prediction != 0:
+			glossInput += cv_model.actions[res] + " "
+		# if nosign and gloss input is not empty
+		elif len(glossInput) > 0:
+			print("gloss:", glossInput)
+			final_sentence += get_nlp_prediction(glossInput) + ". "
+			glossInput = ""
+	if len(glossInput) > 0:
+		print("gloss:", glossInput)
+		final_sentence += get_nlp_prediction(glossInput) + ". "
+		glossInput = ""
+	return (final_sentence)
+
 @sio.event
 def connect(sid, environ):
 	print('connect', sid)
@@ -113,16 +153,12 @@ def receiveImage(sid, imageBytes, clientCallBackEvent):
 	# 	displayImage(activeSessions[sid], bytes(imageBytes))
 
 @sio.event
-def receiveVideoStream(sid, imageBytes, clientCallBackEvent):
-	gloss = cv_model.run_model(imageBytes)
-	real_text = gloss_to_english(False)
-	if gloss != "nothing":
-		if (len(real_text) == 0):
-			sio.emit(clientCallBackEvent, gloss)
-			print("gloss result:", gloss)
-		else:
-			sio.emit(clientCallBackEvent, real_text)
-			print("real result:", real_text)
+def receiveVideoStream(sid, imageBytes):
+	cv_model.store_frames(imageBytes)
+
+@sio.event
+def processVideo(sid, clientCallBackEvent):
+	return video_gloss_to_english(cv_model.run_model_on_video())
 
 @sio.event
 def stopRecord(sid, clientCallBackEvent):
