@@ -5,17 +5,20 @@ import numpy as np
 import cv2
 from os.path import join
 
-model_weights='Model_10ws_4p.h5'
+model_weights='Model_13ws_3p_13fps.h5'
 frame_rate = 25
 frames = []
 videoFrames = []
 sequence = []
+sentence = []
 predictions = []
 mp_holistic = mp.solutions.holistic # Holistic model - make our detection
 mp_drawing = mp.solutions.drawing_utils # Drawing utilities - make our drawings
 # actions = np.array(['NoSign','hello', 'thanks', 'please', 'sorry', 'you', 'work', 'where'])
 # actions = np.array(['NoSign','hello', 'thanks', 'iloveyou'])
-actions = np.array(['NoSign', 'hello', 'you', 'work', 'where', 'how', 'your', 'day', 'b', 'o'])
+# actions = np.array(['NoSign', 'hello', 'you', 'work', 'where', 'how', 'your', 'day', 'b', 'o'])
+actions = np.array(['NoSign','hello','you','work','where','how','your','day','b','o','me','live','university'])
+
 cv_wts = keras.models.load_model(os.path.join('models', model_weights))
 frameCount = [1]
 
@@ -113,7 +116,49 @@ def run_model(imageBytes):
 	
 	return (result_p)
 
-def store_frames(imageBytes):
+def run_model_dup_check(imageBytes):
+	result_p = "nothing"
+	with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
+		nparr = np.frombuffer(imageBytes, np.uint8)
+		frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+		# frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
+		image, results = mediapipe_detection(frame, holistic)
+		draw_landmarks(image, results)
+		keypoints = extract_keypoints(results)
+		sequence.append(keypoints)
+	imgNo = str(len(frameCount))
+	# cv2.imwrite('frames/img'+imgNo+'.jpg', frame)
+	frameCount.append(1)
+	last_frames = sequence[-frame_rate:]
+	if len(last_frames) == frame_rate:
+	# if len(frameCount) % 25 == 0:
+		res = cv_wts.predict(np.expand_dims(last_frames, axis=0))[0]
+		print(imgNo, actions[np.argmax(res)])
+		predictions.append(np.argmax(res))
+		if len(sentence) > 0:
+			if actions[np.argmax(res)] != sentence[-1]:
+				vals, counts = np.unique(predictions[-10:], return_counts=True)
+				if vals[0]==predictions[-1] and counts[0]>6:
+					sentence.append(actions[np.argmax(res)])
+		else:
+			sentence.append(actions[np.argmax(res)])
+		# check if last prediction 
+
+
+		# check if predictions array is empty and new sign is nosign
+		# if len(predictions) == 0:
+		# 	if np.argmax(res) == 0:
+		# 		return "nothing"
+		# # check duplicate prediction
+		# if len(predictions) > 0:
+		# 	if predictions[-1]==np.argmax(res):
+		# 		return "nothing"
+		# predictions.append(np.argmax(res))
+		# result_p = actions[np.argmax(res)]
+	
+	return (result_p)
+
+def store_frames(imageBytes, totalFrames):
 	nparr = np.frombuffer(imageBytes, np.uint8)
 	frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 	videoFrames.append(frame)

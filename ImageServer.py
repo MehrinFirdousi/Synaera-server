@@ -75,6 +75,42 @@ def gloss_to_english(recordingStopped):
 			cv_model.predictions.clear()
 	return (decoded_sentence)
 
+def gloss_to_english2(recordingStopped):
+	glossInput = ""
+	decoded_sentence = ""
+	# if len(cv_model.predictions) == 1 and cv_model.predictions[-1] == 0:
+	# 	cv_model.predictions.clear()
+	if len(cv_model.sentence) > 1:
+		# last sign was nosign
+		if cv_model.sentence[-1] == 0 or recordingStopped:
+			if recordingStopped and cv_model.sentence[-1] != 0:
+				for res in cv_model.sentence:
+					glossInput += cv_model.actions[res] + " "
+			else:
+				for res in cv_model.sentence[:-1]:
+					glossInput += cv_model.actions[res] + " "
+			glossInput = glossInput[:-1]
+			print(glossInput)
+			prep_input, question_flag, replaced_words = nlp_model.preprocess_sentence(glossInput)
+			# if only 1 word is given, then no need to decode
+			decoded_sentence = nlp_model.decode_sequence(prep_input) if len(prep_input.split()) > 1 else prep_input
+
+			# if '?' not in decoded sentence and original input had 'QM-wig' then add '?' at the end
+			if '?' not in decoded_sentence and question_flag == 1:
+				decoded_sentence = decoded_sentence.strip() + '?'
+
+			# Replace the 'XXXXX' with the original single letter words
+			for word in replaced_words:
+				decoded_sentence = decoded_sentence.replace('xxxxx', word.replace('-',''), 1)
+			decoded_sentence = decoded_sentence.replace('xxxxx', '')
+			
+			# if decoded sentence contains ['who', 'what', 'when', 'where', 'why', 'how'] then add '?' at the end
+			if any(word in decoded_sentence for word in ['who', 'what', 'when', 'where', 'why', 'how']) and '?' not in decoded_sentence:
+				decoded_sentence = decoded_sentence.strip() + '?'
+			print("decoded:", decoded_sentence)
+			cv_model.sentence.clear()
+	return (decoded_sentence)
+
 def get_nlp_prediction(glossInput):
 	prep_input, question_flag, replaced_words = nlp_model.preprocess_sentence(glossInput)
 	# if only 1 word is given, then no need to decode
@@ -157,13 +193,16 @@ def receiveImage(sid, imageBytes, clientCallBackEvent):
 	# 	displayImage(activeSessions[sid], bytes(imageBytes))
 
 @sio.event
-def receiveVideoStream(sid, imageBytes):
-	cv_model.store_frames(imageBytes)
+def receiveVideoStream(sid, imageBytes, totalFrames):
+	cv_model.store_frames(imageBytes, totalFrames)
+	# if len(cv_model.videoFrames) == totalFrames:
+		# emit result to clientCallBackEvent and start processing 
 
 @sio.event
 def processVideo(sid):
 	# sio.emit(clientCallBackEvent, video_gloss_to_english(cv_model.run_model_on_video()))
 	transcript.append(video_gloss_to_english(cv_model.run_model_on_video()))
+	print("Transcript generated!")
 	if len(transcript) > 0:
 		if len(transcript[0]) == 0:
 			transcript.clear()
@@ -173,7 +212,7 @@ def processVideo(sid):
 def checkTranscript(sid, clientCallBackEvent):
 	if len(transcript) > 0:
 		if len(transcript[0]) > 0:
-			sio.emit(clientCallBackEvent, transcript)
+			sio.emit(clientCallBackEvent, transcript[0])
 			transcript.clear()
 	else:
 		sio.emit(clientCallBackEvent, "")
