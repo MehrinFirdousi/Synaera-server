@@ -6,7 +6,7 @@ import cv2
 from os.path import join
 
 model_weights='Model_13ws_3p_13fps.h5'
-frame_rate = 25
+frame_rate = 13
 frames = []
 videoFrames = []
 sequence = []
@@ -100,7 +100,7 @@ def run_model(imageBytes):
 	frameCount.append(1)
 	last_frames = sequence[-frame_rate:]
 	# if len(last_frames) == frame_rate:
-	if len(frameCount) % 25 == 0:
+	if len(frameCount) % frame_rate == 0:
 		res = cv_wts.predict(np.expand_dims(last_frames, axis=0))[0]
 		print(imgNo, actions[np.argmax(res)])
 		# check if predictions array is empty and new sign is nosign
@@ -131,7 +131,7 @@ def run_model_dup_check(imageBytes):
 	frameCount.append(1)
 	last_frames = sequence[-frame_rate:]
 	if len(last_frames) == frame_rate:
-	# if len(frameCount) % 25 == 0:
+	# if len(frameCount) % frame_rate == 0:
 		res = cv_wts.predict(np.expand_dims(last_frames, axis=0))[0]
 		print(imgNo, actions[np.argmax(res)])
 		predictions.append(np.argmax(res))
@@ -167,6 +167,7 @@ def store_frames(imageBytes, totalFrames):
 def run_model_on_video():
 	videoSequence = []
 	videoPredictions = []
+	videoSentences = []
 	print("START MODEL EXEC ON VIDEO")
 	for frame in videoFrames:
 		print("processing frame:", len(videoSequence))
@@ -178,7 +179,20 @@ def run_model_on_video():
 		last_frames = videoSequence[-frame_rate:]
 		if len(last_frames) == frame_rate:
 			res = cv_wts.predict(np.expand_dims(last_frames, axis=0))[0]
-			print(len(videoSequence), actions[np.argmax(res)])
+			print(len(videoSequence), "actual: ", actions[np.argmax(res)])
+			
+			videoPredictions.append(np.argmax(res))
+			if len(videoSentences) > 0:
+				if actions[np.argmax(res)] != videoSentences[-1]:
+					vals, counts = np.unique(videoPredictions[-10:], return_counts=True)
+					if vals[0]==videoPredictions[-1] and counts[0]>6:
+						print(len(videoSequence), "filtered: ", actions[np.argmax(res)])
+						videoSentences.append(actions[np.argmax(res)])
+			else:
+				print(len(videoSequence), "filtered: ", actions[np.argmax(res)])
+				videoSentences.append(actions[np.argmax(res)])
+			
+			'''
 			if len(videoPredictions) == 0:
 				if np.argmax(res) == 0:
 					continue
@@ -187,5 +201,8 @@ def run_model_on_video():
 				if videoPredictions[-1]==np.argmax(res):
 					continue
 			videoPredictions.append(np.argmax(res))
+			'''
+
 	videoFrames.clear()
-	return videoPredictions
+	# return videoPredictions
+	return videoSentences
