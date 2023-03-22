@@ -140,8 +140,9 @@ def video_gloss_to_english(videoPredictions):
 	print("START NLP EXEC ON VIDEO PREDICTIONS")
 	for prediction in videoPredictions:
 		# if not nosign
-		if prediction != 0:
-			glossInput += cv_model.actions[prediction] + " "
+		if prediction != "NoSign":
+			# glossInput += cv_model.actions[prediction] + " "
+			glossInput += prediction + " "
 		# if nosign and gloss input is not empty
 		elif len(glossInput) > 0:
 			print("gloss:", glossInput)
