@@ -20,7 +20,7 @@ mp_drawing = mp.solutions.drawing_utils # Drawing utilities - make our drawings
 actions = np.array(['NoSign','hello','you','work','where','how','your','day','b','o','me','live','university'])
 
 cv_wts = keras.models.load_model(os.path.join('models', model_weights))
-frameCount = [1]
+frameCount = []
 
 # To extract keypoint values from frame using mediapipe
 def mediapipe_detection(image, cv_wts):
@@ -95,9 +95,9 @@ def run_model(imageBytes):
 		draw_landmarks(image, results)
 		keypoints = extract_keypoints(results)
 		sequence.append(keypoints)
-	imgNo = str(len(frameCount))
 	# cv2.imwrite('frames/img'+imgNo+'.jpg', frame)
 	frameCount.append(1)
+	imgNo = str(len(frameCount))
 	last_frames = sequence[-frame_rate:]
 	# if len(last_frames) == frame_rate:
 	if len(frameCount) % frame_rate == 0:
@@ -126,22 +126,30 @@ def run_model_dup_check(imageBytes):
 		draw_landmarks(image, results)
 		keypoints = extract_keypoints(results)
 		sequence.append(keypoints)
-	imgNo = str(len(frameCount))
 	# cv2.imwrite('frames/img'+imgNo+'.jpg', frame)
 	frameCount.append(1)
+	imgNo = str(len(frameCount))
 	last_frames = sequence[-frame_rate:]
 	if len(last_frames) == frame_rate:
 	# if len(frameCount) % frame_rate == 0:
 		res = cv_wts.predict(np.expand_dims(last_frames, axis=0))[0]
 		print(imgNo, actions[np.argmax(res)])
 		predictions.append(np.argmax(res))
-		if len(sentence) > 0:
+		# new prediction is nosign 
+		if predictions[-1] == 0:
+			if sentence[-1] != "NoSign":
+				result_p = actions[np.argmax(res)]
+				sentence.append(result_p)
+		elif len(sentence) > 0:
 			if actions[np.argmax(res)] != sentence[-1]:
 				vals, counts = np.unique(predictions[-10:], return_counts=True)
 				if vals[0]==predictions[-1] and counts[0]>6:
-					sentence.append(actions[np.argmax(res)])
+					result_p = actions[np.argmax(res)]
+					sentence.append(result_p)
 		else:
-			sentence.append(actions[np.argmax(res)])
+			result_p = actions[np.argmax(res)]
+			sentence.append(result_p)
+
 		# check if last prediction 
 
 
@@ -155,7 +163,7 @@ def run_model_dup_check(imageBytes):
 		# 		return "nothing"
 		# predictions.append(np.argmax(res))
 		# result_p = actions[np.argmax(res)]
-	
+
 	return (result_p)
 
 def store_frames(imageBytes, totalFrames):

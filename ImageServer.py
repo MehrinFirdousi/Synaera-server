@@ -55,23 +55,7 @@ def gloss_to_english(recordingStopped):
 					glossInput += cv_model.actions[res] + " "
 			glossInput = glossInput[:-1]
 			print(glossInput)
-			prep_input, question_flag, replaced_words = nlp_model.preprocess_sentence(glossInput)
-			# if only 1 word is given, then no need to decode
-			decoded_sentence = nlp_model.decode_sequence(prep_input) if len(prep_input.split()) > 1 else prep_input
-
-			# if '?' not in decoded sentence and original input had 'QM-wig' then add '?' at the end
-			if '?' not in decoded_sentence and question_flag == 1:
-				decoded_sentence = decoded_sentence.strip() + '?'
-
-			# Replace the 'XXXXX' with the original single letter words
-			for word in replaced_words:
-				decoded_sentence = decoded_sentence.replace('xxxxx', word.replace('-',''), 1)
-			decoded_sentence = decoded_sentence.replace('xxxxx', '')
-			
-			# if decoded sentence contains ['who', 'what', 'when', 'where', 'why', 'how'] then add '?' at the end
-			if any(word in decoded_sentence for word in ['who', 'what', 'when', 'where', 'why', 'how']) and '?' not in decoded_sentence:
-				decoded_sentence = decoded_sentence.strip() + '?'
-			print("decoded:", decoded_sentence)
+			decoded_sentence = nlp_model.get_nlp_prediction(glossInput)
 			cv_model.predictions.clear()
 	return (decoded_sentence)
 
@@ -84,73 +68,36 @@ def gloss_to_english2(recordingStopped):
 		# last sign was nosign
 		if cv_model.sentence[-1] == 0 or recordingStopped:
 			if recordingStopped and cv_model.sentence[-1] != 0:
-				for res in cv_model.sentence:
-					glossInput += cv_model.actions[res] + " "
+				for word in cv_model.sentence:
+					glossInput += word + " "
 			else:
-				for res in cv_model.sentence[:-1]:
-					glossInput += cv_model.actions[res] + " "
+				for word in cv_model.sentence[:-1]:
+					glossInput += word + " "
 			glossInput = glossInput[:-1]
 			print(glossInput)
-			prep_input, question_flag, replaced_words = nlp_model.preprocess_sentence(glossInput)
-			# if only 1 word is given, then no need to decode
-			decoded_sentence = nlp_model.decode_sequence(prep_input) if len(prep_input.split()) > 1 else prep_input
-
-			# if '?' not in decoded sentence and original input had 'QM-wig' then add '?' at the end
-			if '?' not in decoded_sentence and question_flag == 1:
-				decoded_sentence = decoded_sentence.strip() + '?'
-
-			# Replace the 'XXXXX' with the original single letter words
-			for word in replaced_words:
-				decoded_sentence = decoded_sentence.replace('xxxxx', word.replace('-',''), 1)
-			decoded_sentence = decoded_sentence.replace('xxxxx', '')
-			
-			# if decoded sentence contains ['who', 'what', 'when', 'where', 'why', 'how'] then add '?' at the end
-			if any(word in decoded_sentence for word in ['who', 'what', 'when', 'where', 'why', 'how']) and '?' not in decoded_sentence:
-				decoded_sentence = decoded_sentence.strip() + '?'
-			print("decoded:", decoded_sentence)
+			decoded_sentence = nlp_model.get_nlp_prediction(glossInput)
 			cv_model.sentence.clear()
 	return (decoded_sentence)
 
-def get_nlp_prediction(glossInput):
-	prep_input, question_flag, replaced_words = nlp_model.preprocess_sentence(glossInput)
-	# if only 1 word is given, then no need to decode
-	decoded_sentence = nlp_model.decode_sequence(prep_input) if len(prep_input.split()) > 1 else prep_input
-
-	# if '?' not in decoded sentence and original input had 'QM-wig' then add '?' at the end
-	if '?' not in decoded_sentence and question_flag == 1:
-		decoded_sentence = decoded_sentence.strip() + '?'
-
-	# Replace the 'XXXXX' with the original single letter words
-	for word in replaced_words:
-		decoded_sentence = decoded_sentence.replace('xxxxx', word.replace('-',''), 1)
-	decoded_sentence = decoded_sentence.replace('xxxxx', '')
-	
-	# if decoded sentence contains ['who', 'what', 'when', 'where', 'why', 'how'] then add '?' at the end
-	if any(word in decoded_sentence for word in ['who', 'what', 'when', 'where', 'why', 'how']) and '?' not in decoded_sentence:
-		decoded_sentence = decoded_sentence.strip() + '?'
-	print("decoded:", decoded_sentence)
-	return decoded_sentence
-
-def video_gloss_to_english(videoPredictions):
+def video_gloss_to_english(videoSentence):
 	glossInput = ""
 	final_sentence = ""
-	if len(videoPredictions) == 0:
+	if len(videoSentence) == 0:
 		print("no video predictions")
 		return
 	print("START NLP EXEC ON VIDEO PREDICTIONS")
-	for prediction in videoPredictions:
-		# if not nosign
+	for prediction in videoSentence:
 		if prediction != "NoSign":
 			# glossInput += cv_model.actions[prediction] + " "
 			glossInput += prediction + " "
 		# if nosign and gloss input is not empty
 		elif len(glossInput) > 0:
 			print("gloss:", glossInput)
-			final_sentence += get_nlp_prediction(glossInput) + ". "
+			final_sentence += nlp_model.get_nlp_prediction(glossInput) + ". "
 			glossInput = ""
 	if len(glossInput) > 0:
 		print("gloss:", glossInput)
-		final_sentence += get_nlp_prediction(glossInput) + ". "
+		final_sentence += nlp_model.get_nlp_prediction(glossInput) + ". "
 		glossInput = ""
 	return (final_sentence)
 
@@ -181,8 +128,10 @@ def authenticate(sid, username, password, clientCallbackEvent):
 # received in python as Bytes.
 @sio.event
 def receiveImage(sid, imageBytes, clientCallBackEvent):
-	gloss = cv_model.run_model_frame_batches(imageBytes)
-	real_text = gloss_to_english(False)
+	# gloss = cv_model.run_model_frame_batches(imageBytes)
+	# real_text = gloss_to_english(False)
+	gloss = cv_model.run_model_dup_check(imageBytes)
+	real_text = gloss_to_english2(False)
 	if gloss != "nothing":
 		if (len(real_text) == 0):
 			sio.emit(clientCallBackEvent, gloss)
@@ -220,7 +169,7 @@ def checkTranscript(sid, clientCallBackEvent):
 
 @sio.event
 def stopRecord(sid, clientCallBackEvent):
-	real_text = gloss_to_english(True)
+	real_text = gloss_to_english2(True)
 	if len(real_text) > 0:
 		sio.emit(clientCallBackEvent, real_text)
 		print("real result:", real_text)

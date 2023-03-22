@@ -171,3 +171,23 @@ def preprocess_sentence(sentence):
     sentence = ' '.join(result)
 
     return sentence, question_flag, replaced_words
+
+def get_nlp_prediction(glossInput):
+	prep_input, question_flag, replaced_words = nlp_model.preprocess_sentence(glossInput)
+	# if only 1 word is given, then no need to decode
+	decoded_sentence = nlp_model.decode_sequence(prep_input) if len(prep_input.split()) > 1 else prep_input
+
+	# if '?' not in decoded sentence and original input had 'QM-wig' then add '?' at the end
+	if '?' not in decoded_sentence and question_flag == 1:
+		decoded_sentence = decoded_sentence.strip() + '?'
+
+	# Replace the 'XXXXX' with the original single letter words
+	for word in replaced_words:
+		decoded_sentence = decoded_sentence.replace('xxxxx', word.replace('-',''), 1)
+	decoded_sentence = decoded_sentence.replace('xxxxx', '')
+	
+	# if decoded sentence contains ['who', 'what', 'when', 'where', 'why', 'how'] then add '?' at the end
+	if any(word in decoded_sentence for word in ['who', 'what', 'when', 'where', 'why', 'how']) and '?' not in decoded_sentence:
+		decoded_sentence = decoded_sentence.strip() + '?'
+	print("decoded:", decoded_sentence)
+	return decoded_sentence
