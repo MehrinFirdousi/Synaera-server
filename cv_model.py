@@ -5,7 +5,7 @@ import numpy as np
 import cv2
 from os.path import join
 
-model_weights='Model_13ws_3p_13fps.h5'
+model_weights='Model_13ws_4p_13fps.h5'
 frame_rate = 13
 frames = []
 videoFrames = []
