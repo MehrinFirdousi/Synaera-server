@@ -128,16 +128,16 @@ def authenticate(sid, username, password, clientCallbackEvent):
 # received in python as Bytes.
 @sio.event
 def receiveImage(sid, imageBytes, clientCallBackEvent):
-	# gloss = cv_model.run_model_frame_batches(imageBytes)
-	# real_text = gloss_to_english(False)
-	gloss = cv_model.run_model_dup_check(imageBytes)
-	real_text = gloss_to_english2(False)
+	gloss = cv_model.run_model_frame_batches(imageBytes)
+	real_text = gloss_to_english(False)
+	# gloss = cv_model.run_model_dup_check(imageBytes)
+	# real_text = gloss_to_english2(False)
 	if gloss != "nothing":
 		if (len(real_text) == 0):
-			sio.emit(clientCallBackEvent, gloss)
+			sio.emit(clientCallBackEvent, gloss, True)
 			print("gloss result:", gloss)
 		else:
-			sio.emit(clientCallBackEvent, real_text)
+			sio.emit(clientCallBackEvent, real_text, False)
 			print("real result:", real_text)
 	# if(isDisplay):
 	# 	displayImage(activeSessions[sid], bytes(imageBytes))

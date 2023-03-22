@@ -129,6 +129,8 @@ def run_model_dup_check(imageBytes):
 	# cv2.imwrite('frames/img'+imgNo+'.jpg', frame)
 	frameCount.append(1)
 	imgNo = str(len(frameCount))
+	print("received", imgNo)
+	
 	last_frames = sequence[-frame_rate:]
 	if len(last_frames) == frame_rate:
 	# if len(frameCount) % frame_rate == 0:
@@ -137,7 +139,7 @@ def run_model_dup_check(imageBytes):
 		predictions.append(np.argmax(res))
 		# new prediction is nosign 
 		if predictions[-1] == 0:
-			if sentence[-1] != "NoSign":
+			if len(sentence) > 0 and sentence[-1] != "NoSign":
 				result_p = actions[np.argmax(res)]
 				sentence.append(result_p)
 		elif len(sentence) > 0:

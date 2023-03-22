@@ -173,9 +173,9 @@ def preprocess_sentence(sentence):
     return sentence, question_flag, replaced_words
 
 def get_nlp_prediction(glossInput):
-	prep_input, question_flag, replaced_words = nlp_model.preprocess_sentence(glossInput)
+	prep_input, question_flag, replaced_words = preprocess_sentence(glossInput)
 	# if only 1 word is given, then no need to decode
-	decoded_sentence = nlp_model.decode_sequence(prep_input) if len(prep_input.split()) > 1 else prep_input
+	decoded_sentence = decode_sequence(prep_input) if len(prep_input.split()) > 1 else prep_input
 
 	# if '?' not in decoded sentence and original input had 'QM-wig' then add '?' at the end
 	if '?' not in decoded_sentence and question_flag == 1:
