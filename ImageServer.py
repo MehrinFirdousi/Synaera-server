@@ -153,11 +153,9 @@ def receiveVideoStream(sid, imageBytes, totalFrames):
 		t = threading.Thread(target=processVideo)
 		t.start()
 		print("Thread started..")
-
 		# emit result to clientCallBackEvent and start processing 
 
-# @sio.event
-def processVideo(sid):
+def processVideo():
 	# sio.emit(clientCallBackEvent, video_gloss_to_english(cv_model.run_model_on_video()))
 	transcript.append(video_gloss_to_english(cv_model.run_model_on_video()))
 	print("Transcript generated!")

@@ -7,6 +7,7 @@ from os.path import join
 
 model_weights='Model_13ws_4p_5fps_new.h5'
 frame_rate = 5
+videoPredictionThreshold=10
 frames = []
 videoFrames = []
 sequence = []
@@ -182,29 +183,29 @@ def run_model_on_video():
 	videoPredictions = []
 	videoSentences = []
 	print("START MODEL EXEC ON VIDEO")
-	for frame in videoFrames:
-		print("processing frame:", len(videoSequence))
-		with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
+	with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
+		for frame in videoFrames:
+			print("processing frame:", len(videoSequence))
 			image, results = mediapipe_detection(frame, holistic)
 			draw_landmarks(image, results)
 			keypoints = extract_keypoints(results)
 			videoSequence.append(keypoints)
-		last_frames = videoSequence[-frame_rate:]
-		if len(last_frames) == frame_rate:
-			res = cv_wts.predict(np.expand_dims(last_frames, axis=0))[0]
-			print(len(videoSequence), "actual: ", actions[np.argmax(res)])
-			
-			videoPredictions.append(np.argmax(res))
-			if len(videoSentences) > 0:
-				if actions[np.argmax(res)] != videoSentences[-1]:
-					vals, counts = np.unique(videoPredictions[-10:], return_counts=True)
-					if vals[0]==videoPredictions[-1] and counts[0]>6:
-						print(len(videoSequence), "filtered: ", actions[np.argmax(res)])
-						videoSentences.append(actions[np.argmax(res)])
-			else:
-				print(len(videoSequence), "filtered: ", actions[np.argmax(res)])
-				videoSentences.append(actions[np.argmax(res)])
-			
+			last_frames = videoSequence[-frame_rate:]
+			if len(last_frames) == frame_rate:
+				res = cv_wts.predict(np.expand_dims(last_frames, axis=0))[0]
+				print(len(videoSequence), "actual: ", actions[np.argmax(res)])
+				
+				videoPredictions.append(np.argmax(res))
+				if len(videoSentences) > 0:
+					if actions[np.argmax(res)] != videoSentences[-1]:
+						vals, counts = np.unique(videoPredictions[-10:], return_counts=True)
+						if vals[0]==videoPredictions[-1] and counts[0]>videoPredictionThreshold:
+							print(len(videoSequence), "filtered: ", actions[np.argmax(res)])
+							videoSentences.append(actions[np.argmax(res)])
+				else:
+					print(len(videoSequence), "filtered: ", actions[np.argmax(res)])
+					videoSentences.append(actions[np.argmax(res)])
+				
 			'''
 			if len(videoPredictions) == 0:
 				if np.argmax(res) == 0:
