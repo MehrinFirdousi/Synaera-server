@@ -3,6 +3,7 @@ import eventlet
 import socketio
 import cv2
 import numpy as np
+import time
 from engineio.payload import Payload
 import cv_model
 import nlp_model
@@ -147,7 +148,10 @@ def receiveImage(sid, imageBytes, clientCallBackEvent):
 @sio.event
 def receiveVideoStream(sid, imageBytes, totalFrames):
 	cv_model.store_frames(imageBytes, totalFrames)
-	# if len(cv_model.videoFrames) == totalFrames:
+	if len(cv_model.videoFrames) == totalFrames:
+		print("Video upload complete. Starting processing")
+		sio.emit()
+
 		# emit result to clientCallBackEvent and start processing 
 
 @sio.event
