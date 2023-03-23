@@ -134,10 +134,12 @@ def receiveImage(sid, imageBytes, clientCallBackEvent):
 	# real_text = gloss_to_english2(False)
 	if gloss != "nothing":
 		if (len(real_text) == 0):
-			sio.emit(clientCallBackEvent, gloss, True)
+			data = {'result': gloss, 'isGloss': True}
+			sio.emit(clientCallBackEvent, data)
 			print("gloss result:", gloss)
 		else:
-			sio.emit(clientCallBackEvent, real_text, False)
+			data = {'result': real_text, 'isGloss': False}
+			sio.emit(clientCallBackEvent, data)
 			print("real result:", real_text)
 	# if(isDisplay):
 	# 	displayImage(activeSessions[sid], bytes(imageBytes))
@@ -169,9 +171,10 @@ def checkTranscript(sid, clientCallBackEvent):
 
 @sio.event
 def stopRecord(sid, clientCallBackEvent):
-	real_text = gloss_to_english2(True)
+	real_text = gloss_to_english(True)
 	if len(real_text) > 0:
-		sio.emit(clientCallBackEvent, real_text)
+		data = {'result': real_text, 'isGloss': False}
+		sio.emit(clientCallBackEvent, data)
 		print("real result:", real_text)
 
 @sio.event
