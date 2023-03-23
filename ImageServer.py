@@ -3,7 +3,7 @@ import eventlet
 import socketio
 import cv2
 import numpy as np
-import time
+import threading
 from engineio.payload import Payload
 import cv_model
 import nlp_model
@@ -150,11 +150,13 @@ def receiveVideoStream(sid, imageBytes, totalFrames):
 	cv_model.store_frames(imageBytes, totalFrames)
 	if len(cv_model.videoFrames) == totalFrames:
 		print("Video upload complete. Starting processing")
-		sio.emit()
+		t = threading.Thread(target=processVideo)
+		t.start()
+		print("Thread started..")
 
 		# emit result to clientCallBackEvent and start processing 
 
-@sio.event
+# @sio.event
 def processVideo(sid):
 	# sio.emit(clientCallBackEvent, video_gloss_to_english(cv_model.run_model_on_video()))
 	transcript.append(video_gloss_to_english(cv_model.run_model_on_video()))
@@ -166,6 +168,7 @@ def processVideo(sid):
 
 @sio.event
 def checkTranscript(sid, clientCallBackEvent):
+	print("Client requested for transcript")
 	if len(transcript) > 0:
 		if len(transcript[0]) > 0:
 			sio.emit(clientCallBackEvent, transcript[0])

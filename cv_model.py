@@ -5,8 +5,8 @@ import numpy as np
 import cv2
 from os.path import join
 
-model_weights='Model_13ws_4p_13fps_new.h5'
-frame_rate = 13
+model_weights='Model_13ws_4p_5fps_new.h5'
+frame_rate = 5
 frames = []
 videoFrames = []
 sequence = []
@@ -54,6 +54,7 @@ def run_model_frame_batches(imageBytes):
 	frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 	frame = cv2.flip(frame, 1)
 	frames.append(frame)
+	threshold = 0.80
 
 	# cv2.imwrite('frames/img'+str(len(frames))+'.jpg', frame)
 	print("received", len(frames))
@@ -71,18 +72,20 @@ def run_model_frame_batches(imageBytes):
 				sequence.append(keypoints)
 			frames.clear()
 			res = cv_wts.predict(np.expand_dims(sequence, axis=0))[0]
-			print(actions[np.argmax(res)])
-			# check if prediction is nosign and predictions array is empty
-			if len(predictions) == 0:
-				if np.argmax(res) == 0:
-					return "nothing"
-			# check duplicate prediction
-			if len(predictions) > 0:
-				if predictions[-1]==np.argmax(res):
-					return "nothing"
-
-			predictions.append(np.argmax(res))
-			result_p = actions[np.argmax(res)]
+			print("actual:", actions[np.argmax(res)])
+			
+			if res[np.argmax(res)] > threshold:
+				# check if prediction is nosign and predictions array is empty
+				if len(predictions) == 0:
+					if np.argmax(res) == 0:
+						return "nothing"
+				# check duplicate prediction
+				if len(predictions) > 0:
+					if predictions[-1]==np.argmax(res):
+						return "nothing"
+				predictions.append(np.argmax(res))
+				result_p = actions[np.argmax(res)]
+				print("filtered:", result_p)
 	return (result_p)
 
 def run_model(imageBytes):
