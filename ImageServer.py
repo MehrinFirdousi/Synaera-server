@@ -159,6 +159,7 @@ def processVideo():
 	# sio.emit(clientCallBackEvent, video_gloss_to_english(cv_model.run_model_on_video()))
 	transcript.append(video_gloss_to_english(cv_model.run_model_on_video()))
 	print("Transcript generated!")
+	print(transcript[0])
 	if len(transcript) > 0:
 		if len(transcript[0]) == 0:
 			transcript.clear()

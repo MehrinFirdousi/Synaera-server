@@ -145,27 +145,30 @@ def run_model_dup_check(imageBytes):
 	if len(last_frames) == frame_rate:
 	# if len(frameCount) % frame_rate == 0:
 		res = cv_wts.predict(np.expand_dims(last_frames, axis=0))[0]
-		print(imgNo, actions[np.argmax(res)])
+		print(imgNo, "actual:", actions[np.argmax(res)])
 		
 		# new prediction is nosign 
 		predictions.append(np.argmax(res))
 		if predictions[-1] == 0:
 			if len(sentence) > 0 and sentence[-1] != "NoSign":
-				vals, counts = np.unique(predictions[-bufferLen:], return_counts=True)
+				vals, counts = np.unique(predictions[-5:], return_counts=True)
 				if vals[0]==predictions[-1] and counts[0]>4:
 					result_p = actions[predictions[-1]]
 					sentence.append(result_p)
+					print("filtered1:", result_p)
 		elif len(sentence) > 0:
 			if actions[predictions[-1]] != sentence[-1]:
 				vals, counts = np.unique(predictions[-bufferLen:], return_counts=True)
 				if vals[0]==predictions[-1] and counts[0]>predictionThreshold:
 					result_p = actions[predictions[-1]]
 					sentence.append(result_p)
+					print("filtered2:", result_p)
 		else:
 			vals, counts = np.unique(predictions[-bufferLen:], return_counts=True)
 			if vals[0]==predictions[-1] and counts[0]>predictionThreshold:
 				result_p = actions[predictions[-1]]
 				sentence.append(result_p)
+				print("filtered3:", result_p)
 			# result_p = actions[predictions[-1]]
 			# sentence.append(result_p)
 
