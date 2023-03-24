@@ -7,7 +7,9 @@ from os.path import join
 
 model_weights='Model_13ws_4p_5fps_new.h5'
 frame_rate = 5
+bufferLen=10
 videoPredictionThreshold=6
+predictionThreshold=6
 frames = []
 videoFrames = []
 sequence = []
@@ -149,19 +151,23 @@ def run_model_dup_check(imageBytes):
 		predictions.append(np.argmax(res))
 		if predictions[-1] == 0:
 			if len(sentence) > 0 and sentence[-1] != "NoSign":
-				result_p = actions[predictions[-1]]
-				sentence.append(result_p)
+				vals, counts = np.unique(predictions[-bufferLen:], return_counts=True)
+				if vals[0]==predictions[-1] and counts[0]>4:
+					result_p = actions[predictions[-1]]
+					sentence.append(result_p)
 		elif len(sentence) > 0:
-			# predictions.append(np.argmax(res))
 			if actions[predictions[-1]] != sentence[-1]:
-				vals, counts = np.unique(predictions[-10:], return_counts=True)
-				if vals[0]==predictions[-1] and counts[0]>6:
+				vals, counts = np.unique(predictions[-bufferLen:], return_counts=True)
+				if vals[0]==predictions[-1] and counts[0]>predictionThreshold:
 					result_p = actions[predictions[-1]]
 					sentence.append(result_p)
 		else:
-			# predictions.append(np.argmax(res))
-			result_p = actions[predictions[-1]]
-			sentence.append(result_p)
+			vals, counts = np.unique(predictions[-bufferLen:], return_counts=True)
+			if vals[0]==predictions[-1] and counts[0]>predictionThreshold:
+				result_p = actions[predictions[-1]]
+				sentence.append(result_p)
+			# result_p = actions[predictions[-1]]
+			# sentence.append(result_p)
 
 	return (result_p)
 
