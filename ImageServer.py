@@ -129,10 +129,10 @@ def authenticate(sid, username, password, clientCallbackEvent):
 # received in python as Bytes.
 @sio.event
 def receiveImage(sid, imageBytes, clientCallBackEvent):
-	gloss = cv_model.run_model_frame_batches(imageBytes)
-	real_text = gloss_to_english(False)
-	# gloss = cv_model.run_model_dup_check(imageBytes)
-	# real_text = gloss_to_english2(False)
+	# gloss = cv_model.run_model_frame_batches(imageBytes)
+	# real_text = gloss_to_english(False)
+	gloss = cv_model.run_model_dup_check(imageBytes)
+	real_text = gloss_to_english2(False)
 	if gloss != "nothing":
 		if (len(real_text) == 0):
 			data = {'result': gloss, 'isGloss': True}
@@ -176,7 +176,7 @@ def checkTranscript(sid, clientCallBackEvent):
 
 @sio.event
 def stopRecord(sid, clientCallBackEvent):
-	real_text = gloss_to_english(True)
+	real_text = gloss_to_english2(True)
 	if len(real_text) > 0:
 		data = {'result': real_text, 'isGloss': False}
 		sio.emit(clientCallBackEvent, data)

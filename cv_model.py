@@ -7,7 +7,7 @@ from os.path import join
 
 model_weights='Model_13ws_4p_5fps_new.h5'
 frame_rate = 5
-videoPredictionThreshold=10
+videoPredictionThreshold=6
 frames = []
 videoFrames = []
 sequence = []
@@ -16,7 +16,7 @@ predictions = []
 mp_holistic = mp.solutions.holistic # Holistic model - make our detection
 mp_drawing = mp.solutions.drawing_utils # Drawing utilities - make our drawings
 holistic = mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5)
-holistic.initialize()
+holistic.__enter__()
 # actions = np.array(['NoSign','hello', 'thanks', 'please', 'sorry', 'you', 'work', 'where'])
 # actions = np.array(['NoSign','hello', 'thanks', 'iloveyou'])
 # actions = np.array(['NoSign', 'hello', 'you', 'work', 'where', 'how', 'your', 'day', 'b', 'o'])
@@ -93,14 +93,14 @@ def run_model_frame_batches(imageBytes):
 
 def run_model(imageBytes):
 	result_p = "nothing"
-	with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
-		nparr = np.frombuffer(imageBytes, np.uint8)
-		frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-		# frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
-		image, results = mediapipe_detection(frame, holistic)
-		draw_landmarks(image, results)
-		keypoints = extract_keypoints(results)
-		sequence.append(keypoints)
+	# with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
+	nparr = np.frombuffer(imageBytes, np.uint8)
+	frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+	# frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
+	image, results = mediapipe_detection(frame, holistic)
+	draw_landmarks(image, results)
+	keypoints = extract_keypoints(results)
+	sequence.append(keypoints)
 	# cv2.imwrite('frames/img'+imgNo+'.jpg', frame)
 	frameCount.append(1)
 	imgNo = str(len(frameCount))
@@ -127,7 +127,9 @@ def run_model_dup_check(imageBytes):
 	# with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
 	nparr = np.frombuffer(imageBytes, np.uint8)
 	frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+	frame = cv2.flip(frame, 1)
 	# frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
+	
 	image, results = mediapipe_detection(frame, holistic)
 	draw_landmarks(image, results)
 	keypoints = extract_keypoints(results)
@@ -146,31 +148,17 @@ def run_model_dup_check(imageBytes):
 		# new prediction is nosign 
 		if predictions[-1] == 0:
 			if len(sentence) > 0 and sentence[-1] != "NoSign":
-				result_p = actions[np.argmax(res)]
+				result_p = actions[predictions[-1]]
 				sentence.append(result_p)
 		elif len(sentence) > 0:
-			if actions[np.argmax(res)] != sentence[-1]:
+			if actions[predictions[-1]] != sentence[-1]:
 				vals, counts = np.unique(predictions[-10:], return_counts=True)
 				if vals[0]==predictions[-1] and counts[0]>6:
-					result_p = actions[np.argmax(res)]
+					result_p = actions[predictions[-1]]
 					sentence.append(result_p)
 		else:
-			result_p = actions[np.argmax(res)]
+			result_p = actions[predictions[-1]]
 			sentence.append(result_p)
-
-		# check if last prediction 
-
-
-		# check if predictions array is empty and new sign is nosign
-		# if len(predictions) == 0:
-		# 	if np.argmax(res) == 0:
-		# 		return "nothing"
-		# # check duplicate prediction
-		# if len(predictions) > 0:
-		# 	if predictions[-1]==np.argmax(res):
-		# 		return "nothing"
-		# predictions.append(np.argmax(res))
-		# result_p = actions[np.argmax(res)]
 
 	return (result_p)
 
