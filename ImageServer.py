@@ -1,4 +1,5 @@
 import sys, getopt
+import re
 import eventlet
 import socketio
 import cv2
@@ -100,6 +101,7 @@ def video_gloss_to_english(videoSentence):
 		print("gloss:", glossInput)
 		final_sentence += nlp_model.get_nlp_prediction(glossInput) + ". "
 		glossInput = ""
+	final_sentence = '. '.join(i.capitalize() for i in final_sentence.split('. '))
 	return (final_sentence)
 
 @sio.event
@@ -155,11 +157,19 @@ def receiveVideoStream(sid, imageBytes, totalFrames):
 		print("Thread started..")
 		# emit result to clientCallBackEvent and start processing 
 
+def format_string(sentence):
+    sentence = sentence.strip()
+    sentence = re.sub(r"\s+", " ", sentence)
+    sentence = re.sub(r"(\. )", ". ", sentence)
+    sentence = '. '.join(i.capitalize() for i in sentence.split('. '))
+    sentence = re.sub(r"(\?\.?)", "?", sentence)
+    return sentence
+
 def processVideo():
 	# sio.emit(clientCallBackEvent, video_gloss_to_english(cv_model.run_model_on_video()))
 	transcript.append(video_gloss_to_english(cv_model.run_model_on_video()))
 	print("Transcript generated!")
-	print(transcript[0])
+	print(format_string(transcript[0]))
 	if len(transcript) > 0:
 		if len(transcript[0]) == 0:
 			transcript.clear()

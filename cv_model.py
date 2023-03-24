@@ -8,7 +8,8 @@ from os.path import join
 model_weights='Model_13ws_4p_5fps_new.h5'
 frame_rate = 5
 bufferLen=10
-videoPredictionThreshold=6
+videoBufferLen=20
+videoPredictionThreshold=15
 predictionThreshold=6
 frames = []
 videoFrames = []
@@ -200,7 +201,7 @@ def run_model_on_video():
 				videoPredictions.append(np.argmax(res))
 				if len(videoSentences) > 0:
 					if actions[np.argmax(res)] != videoSentences[-1]:
-						vals, counts = np.unique(videoPredictions[-10:], return_counts=True)
+						vals, counts = np.unique(videoPredictions[-videoBufferLen:], return_counts=True)
 						if vals[0]==videoPredictions[-1] and counts[0]>videoPredictionThreshold:
 							print(len(videoSequence), "filtered: ", actions[np.argmax(res)])
 							videoSentences.append(actions[np.argmax(res)])
