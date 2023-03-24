@@ -168,6 +168,7 @@ def format_string(sentence):
 def processVideo():
 	# sio.emit(clientCallBackEvent, video_gloss_to_english(cv_model.run_model_on_video()))
 	transcript.append(video_gloss_to_english(cv_model.run_model_on_video()))
+	transcript[0] = format_string(transcript[0])
 	print("Transcript generated!")
 	print(format_string(transcript[0]))
 	if len(transcript) > 0:
@@ -180,6 +181,7 @@ def checkTranscript(sid, clientCallBackEvent):
 	print("Client requested for transcript")
 	if len(transcript) > 0:
 		if len(transcript[0]) > 0:
+			print("Transcript:", transcript[0])
 			sio.emit(clientCallBackEvent, transcript[0])
 			transcript.clear()
 	else:
