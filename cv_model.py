@@ -144,19 +144,22 @@ def run_model_dup_check(imageBytes):
 	# if len(frameCount) % frame_rate == 0:
 		res = cv_wts.predict(np.expand_dims(last_frames, axis=0))[0]
 		print(imgNo, actions[np.argmax(res)])
-		predictions.append(np.argmax(res))
+		
 		# new prediction is nosign 
+		predictions.append(np.argmax(res))
 		if predictions[-1] == 0:
 			if len(sentence) > 0 and sentence[-1] != "NoSign":
 				result_p = actions[predictions[-1]]
 				sentence.append(result_p)
 		elif len(sentence) > 0:
+			# predictions.append(np.argmax(res))
 			if actions[predictions[-1]] != sentence[-1]:
 				vals, counts = np.unique(predictions[-10:], return_counts=True)
 				if vals[0]==predictions[-1] and counts[0]>6:
 					result_p = actions[predictions[-1]]
 					sentence.append(result_p)
 		else:
+			# predictions.append(np.argmax(res))
 			result_p = actions[predictions[-1]]
 			sentence.append(result_p)
 

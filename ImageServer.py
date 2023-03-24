@@ -67,8 +67,8 @@ def gloss_to_english2(recordingStopped):
 	# 	cv_model.predictions.clear()
 	if len(cv_model.sentence) > 1:
 		# last sign was nosign
-		if cv_model.sentence[-1] == 0 or recordingStopped:
-			if recordingStopped and cv_model.sentence[-1] != 0:
+		if cv_model.sentence[-1] == "NoSign" or recordingStopped:
+			if recordingStopped and cv_model.sentence[-1] != "NoSign":
 				for word in cv_model.sentence:
 					glossInput += word + " "
 			else:
