@@ -44,8 +44,6 @@ transcript = []
 def gloss_to_english(recordingStopped):
 	glossInput = ""
 	decoded_sentence = ""
-	# if len(cv_model.predictions) == 1 and cv_model.predictions[-1] == 0:
-	# 	cv_model.predictions.clear()
 	if len(cv_model.predictions) > 1:
 		# last sign was nosign
 		if cv_model.predictions[-1] == 0 or recordingStopped:
@@ -64,8 +62,6 @@ def gloss_to_english(recordingStopped):
 def gloss_to_english2(recordingStopped):
 	glossInput = ""
 	decoded_sentence = ""
-	# if len(cv_model.predictions) == 1 and cv_model.predictions[-1] == 0:
-	# 	cv_model.predictions.clear()
 	if len(cv_model.sentence) > 1:
 		# last sign was nosign
 		if cv_model.sentence[-1] == "NoSign" or recordingStopped:
@@ -131,10 +127,15 @@ def authenticate(sid, username, password, clientCallbackEvent):
 # received in python as Bytes.
 @sio.event
 def receiveImage(sid, imageBytes, clientCallBackEvent):
+	gloss = cv_model.run_model_frame_batches_filter(imageBytes)
+	real_text = gloss_to_english2(False)
+	
 	# gloss = cv_model.run_model_frame_batches(imageBytes)
 	# real_text = gloss_to_english(False)
-	gloss = cv_model.run_model_dup_check(imageBytes)
-	real_text = gloss_to_english2(False)
+	
+	# gloss = cv_model.run_model_dup_check(imageBytes)
+	# real_text = gloss_to_english2(False)
+	
 	if gloss != "nothing":
 		if (len(real_text) == 0):
 			data = {'result': gloss, 'isGloss': True}
@@ -155,15 +156,15 @@ def receiveVideoStream(sid, imageBytes, totalFrames):
 		t = threading.Thread(target=processVideo)
 		t.start()
 		print("Thread started..")
-		# emit result to clientCallBackEvent and start processing 
 
 def format_string(sentence):
-    sentence = sentence.strip()
-    sentence = re.sub(r"\s+", " ", sentence)
-    sentence = re.sub(r"(\. )", ". ", sentence)
-    sentence = '. '.join(i.capitalize() for i in sentence.split('. '))
-    sentence = re.sub(r"(\?\.?)", "?", sentence)
-    return sentence
+	sentence = sentence.strip()
+	sentence = re.sub(r"\s+", " ", sentence)
+	sentence = re.sub(r"(\. +)", ". ", sentence)
+	sentence = re.sub(r"( +\.)", ".", sentence)
+	sentence = '. '.join(i.capitalize() for i in sentence.split('. '))
+	sentence = re.sub(r"(\?\.?)", "?", sentence)
+	return sentence
 
 def processVideo():
 	# sio.emit(clientCallBackEvent, video_gloss_to_english(cv_model.run_model_on_video()))

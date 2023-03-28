@@ -7,10 +7,11 @@ from os.path import join
 
 model_weights='Model_13ws_4p_5fps_new.h5'
 frame_rate = 5
-bufferLen=10
+bufferLen=6
+predictionThreshold=4
 videoBufferLen=20
 videoPredictionThreshold=15
-predictionThreshold=6
+
 frames = []
 videoFrames = []
 sequence = []
@@ -60,38 +61,100 @@ def run_model_frame_batches(imageBytes):
 	frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 	frame = cv2.flip(frame, 1)
 	frames.append(frame)
-	threshold = 0.80
+	threshold = 0.95
 
 	# cv2.imwrite('frames/img'+str(len(frames))+'.jpg', frame)
 	print("received", len(frames))
+	
 	if (len(frames) == frame_rate):
-		with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
-			for frame in frames:
-				# Make detections
-				image, results = mediapipe_detection(frame, holistic)
-				
-				# Draw landmarks
-				draw_landmarks(image, results)
-
-				# Prediction logic
-				keypoints = extract_keypoints(results)
-				sequence.append(keypoints)
-			frames.clear()
-			res = cv_wts.predict(np.expand_dims(sequence, axis=0))[0]
-			print("actual:", actions[np.argmax(res)])
+		# with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
+		for frame in frames:
+			# Make detections
+			image, results = mediapipe_detection(frame, holistic)
 			
-			if res[np.argmax(res)] > threshold:
-				# check if prediction is nosign and predictions array is empty
-				if len(predictions) == 0:
-					if np.argmax(res) == 0:
-						return "nothing"
-				# check duplicate prediction
-				if len(predictions) > 0:
-					if predictions[-1]==np.argmax(res):
-						return "nothing"
-				predictions.append(np.argmax(res))
-				result_p = actions[np.argmax(res)]
-				print("filtered:", result_p)
+			# Draw landmarks
+			draw_landmarks(image, results)
+
+			# Prediction logic
+			keypoints = extract_keypoints(results)
+			sequence.append(keypoints)
+		frames.clear()
+		res = cv_wts.predict(np.expand_dims(sequence, axis=0))[0]
+		print("actual:", actions[np.argmax(res)])
+		
+		if res[np.argmax(res)] > threshold:
+			# check if prediction is nosign and predictions array is empty
+			if len(predictions) == 0:
+				if np.argmax(res) == 0:
+					return "nothing"
+			# check duplicate prediction
+			if len(predictions) > 0:
+				if predictions[-1]==np.argmax(res):
+					return "nothing"
+			predictions.append(np.argmax(res))
+			result_p = actions[np.argmax(res)]
+			print("filtered:", result_p)
+	return (result_p)
+
+def run_model_frame_batches_filter(imageBytes):
+	sequence = []
+	result_p = "nothing"
+	nparr = np.frombuffer(imageBytes, np.uint8)
+	frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+	frame = cv2.flip(frame, 1)
+	frames.append(frame)
+	threshold = 0.95
+
+	# cv2.imwrite('frames/img'+str(len(frames))+'.jpg', frame)
+	print("received", len(frames))
+	
+	if (len(frames) == frame_rate):
+		# with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
+		for frame in frames:
+			image, results = mediapipe_detection(frame, holistic)
+			draw_landmarks(image, results)
+			keypoints = extract_keypoints(results)
+			sequence.append(keypoints)
+		frames.clear()
+		res = cv_wts.predict(np.expand_dims(sequence, axis=0))[0]
+		print(len(frames), "actual:", actions[np.argmax(res)])
+		
+		predictions.append(np.argmax(res))
+		# new prediction is nosign 
+		if predictions[-1] == 0:
+			if len(sentence) > 0 and sentence[-1] != "NoSign":
+				# vals, counts = np.unique(predictions[-2:], return_counts=True)
+				# if vals[0]==predictions[-1] and counts[0]>1:
+				result_p = actions[predictions[-1]]
+				sentence.append(result_p)
+				print("filtered1:", result_p)
+		elif len(sentence) > 0:
+			if actions[predictions[-1]] != sentence[-1]:
+				vals, counts = np.unique(predictions[-2:], return_counts=True)
+				if vals[0]==predictions[-1] and counts[0]>1:
+					result_p = actions[predictions[-1]]
+					sentence.append(result_p)
+					print("filtered2:", result_p)
+		else:
+			vals, counts = np.unique(predictions[-2:], return_counts=True)
+			if vals[0]==predictions[-1] and counts[0]>1:
+				result_p = actions[predictions[-1]]
+				sentence.append(result_p)
+				print("filtered3:", result_p)
+		# print("actual:", actions[np.argmax(res)])
+		
+		# if res[np.argmax(res)] > threshold:
+		# 	# check if prediction is nosign and predictions array is empty
+		# 	if len(predictions) == 0:
+		# 		if np.argmax(res) == 0:
+		# 			return "nothing"
+		# 	# check duplicate prediction
+		# 	if len(predictions) > 0:
+		# 		if predictions[-1]==np.argmax(res):
+		# 			return "nothing"
+		# 	predictions.append(np.argmax(res))
+		# 	result_p = actions[np.argmax(res)]
+		# 	print("filtered:", result_p)
 	return (result_p)
 
 def run_model(imageBytes):
