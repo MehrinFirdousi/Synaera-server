@@ -196,6 +196,8 @@ def stopRecord(sid, clientCallBackEvent):
 		sio.emit(clientCallBackEvent, data)
 		print("real result:", real_text)
 	cv_model.sequence.clear()
+	cv_model.frameCount.clear()
+	cv_model.frames.clear()
 
 @sio.event
 def disconnect(sid):
