@@ -61,7 +61,7 @@ nlp_wts = Model([encoder_inputs, decoder_inputs], decoder_outputs)
 print(colors.UNDERLINE_GREEN + 'Setting up Model:' + colors.ENDC, round(time.time() - st, 2), 'seconds')
 st = time.time()
 
-nlp_wts.load_weights('nmt_weights_v5.h5')
+nlp_wts.load_weights('nmt_weights_v7.h5')
 
 print(colors.UNDERLINE_GREEN + 'Loading Weights:' + colors.ENDC, round(time.time() - st, 2), 'seconds')
 st = time.time()

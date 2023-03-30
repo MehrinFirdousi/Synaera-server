@@ -127,14 +127,14 @@ def authenticate(sid, username, password, clientCallbackEvent):
 # received in python as Bytes.
 @sio.event
 def receiveImage(sid, imageBytes, clientCallBackEvent):
-	gloss = cv_model.run_model_frame_batches_filter(imageBytes)
-	real_text = gloss_to_english2(False)
+	# gloss = cv_model.run_model_frame_batches_filter(imageBytes)
+	# real_text = gloss_to_english2(False)
 	
 	# gloss = cv_model.run_model_frame_batches(imageBytes)
 	# real_text = gloss_to_english(False)
 	
-	# gloss = cv_model.run_model_dup_check(imageBytes)
-	# real_text = gloss_to_english2(False)
+	gloss = cv_model.run_model_dup_check(imageBytes)
+	real_text = gloss_to_english2(False)
 	
 	if gloss != "nothing":
 		if (len(real_text) == 0):
@@ -195,12 +195,13 @@ def stopRecord(sid, clientCallBackEvent):
 		data = {'result': real_text, 'isGloss': False}
 		sio.emit(clientCallBackEvent, data)
 		print("real result:", real_text)
+	cv_model.sequence.clear()
 
 @sio.event
 def disconnect(sid):
 	print('disconnect', sid)
-	# sequence.clear()
-	# cv_model.predictions.clear()
+	cv_model.sequence.clear()
+	cv_model.predictions.clear()
 	cv_model.frameCount.clear()
 	cv_model.frames.clear()
 	print("cleared prediction data")

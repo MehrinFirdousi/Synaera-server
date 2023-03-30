@@ -7,8 +7,8 @@ from os.path import join
 
 model_weights='Model_13ws_4p_5fps_new.h5'
 frame_rate = 5
-bufferLen=6
-predictionThreshold=4
+bufferLen=3
+predictionThreshold=2
 videoBufferLen=20
 videoPredictionThreshold=15
 
@@ -59,7 +59,7 @@ def run_model_frame_batches(imageBytes):
 	result_p = "nothing"
 	nparr = np.frombuffer(imageBytes, np.uint8)
 	frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-	frame = cv2.flip(frame, 1)
+	# frame = cv2.flip(frame, 1)
 	frames.append(frame)
 	threshold = 0.95
 
@@ -101,7 +101,7 @@ def run_model_frame_batches_filter(imageBytes):
 	result_p = "nothing"
 	nparr = np.frombuffer(imageBytes, np.uint8)
 	frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-	frame = cv2.flip(frame, 1)
+	# frame = cv2.flip(frame, 1)
 	frames.append(frame)
 	threshold = 0.95
 
@@ -190,24 +190,22 @@ def run_model(imageBytes):
 
 def run_model_dup_check(imageBytes):
 	result_p = "nothing"
-	# with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
 	nparr = np.frombuffer(imageBytes, np.uint8)
 	frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-	frame = cv2.flip(frame, 1)
-	# frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
+	# frame = cv2.flip(frame, 1)
 	
 	image, results = mediapipe_detection(frame, holistic)
 	draw_landmarks(image, results)
 	keypoints = extract_keypoints(results)
 	sequence.append(keypoints)
-	# cv2.imwrite('frames/img'+imgNo+'.jpg', frame)
 	frameCount.append(1)
 	imgNo = str(len(frameCount))
 	print("received", imgNo)
+	cv2.imwrite('frames/img'+imgNo+'.jpg', frame)
 	
 	last_frames = sequence[-frame_rate:]
-	if len(last_frames) == frame_rate:
-	# if len(frameCount) % frame_rate == 0:
+	# if len(last_frames) == frame_rate:
+	if len(frameCount) >= frame_rate and len(frameCount) % 2 == 1:
 		res = cv_wts.predict(np.expand_dims(last_frames, axis=0))[0]
 		print(imgNo, "actual:", actions[np.argmax(res)])
 		
@@ -215,8 +213,8 @@ def run_model_dup_check(imageBytes):
 		predictions.append(np.argmax(res))
 		if predictions[-1] == 0:
 			if len(sentence) > 0 and sentence[-1] != "NoSign":
-				vals, counts = np.unique(predictions[-5:], return_counts=True)
-				if vals[0]==predictions[-1] and counts[0]>4:
+				vals, counts = np.unique(predictions[-2:], return_counts=True)
+				if vals[0]==predictions[-1] and counts[0]>1:
 					result_p = actions[predictions[-1]]
 					sentence.append(result_p)
 					print("filtered1:", result_p)
