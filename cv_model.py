@@ -221,13 +221,13 @@ def run_model_dup_check(imageBytes):
 		elif len(sentence) > 0:
 			if actions[predictions[-1]] != sentence[-1]:
 				vals, counts = np.unique(predictions[-bufferLen:], return_counts=True)
-				if vals[0]==predictions[-1] and counts[0]>=predictionThreshold:
+				if vals[0]==predictions[-1] and counts[0]>predictionThreshold:
 					result_p = actions[predictions[-1]]
 					sentence.append(result_p)
 					print("filtered2:", result_p)
 		else:
 			vals, counts = np.unique(predictions[-bufferLen:], return_counts=True)
-			if vals[0]==predictions[-1] and counts[0]>=predictionThreshold:
+			if vals[0]==predictions[-1] and counts[0]>predictionThreshold:
 				result_p = actions[predictions[-1]]
 				sentence.append(result_p)
 				print("filtered3:", result_p)
